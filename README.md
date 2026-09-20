@@ -6,8 +6,8 @@ WAJBA is a zero-cost, multi-tenant web application designed for Islamic masjids 
 
 ## Features:
 
-- Multi-Tenancy**: Isolated data for every registered masjid using a unique `masjid_id`[cite: 1].
-- Role-Based Access**:
+- Multi-Tenancy: Isolated data for every registered masjid using a unique `masjid_id`[cite: 1].
+- Role-Based Access:
   - Admin: Enroll masjids, manage house rosters, assign schedules, and review live statuses[cite: 1].
   - House Head (Member): Log in via registered mobile number and secure 4-digit PIN to confirm or swap meal duty[cite: 1].
   - Madrasa Ustad: Access daily food schedules and meal information[cite: 1].
@@ -19,9 +19,9 @@ WAJBA is a zero-cost, multi-tenant web application designed for Islamic masjids 
 
 ##  Tech Stack
 
-- **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript[cite: 1]
-- **Database & Realtime**: [Supabase](https://supabase.com/) (PostgreSQL + Realtime + Row Level Security)[cite: 1]
-- **Alerts**: WhatsApp Web Direct (`wa.me`)[cite: 1]
+- Frontend: HTML5, Tailwind CSS, Vanilla JavaScript[cite: 1]
+- Database & Realtime: [Supabase](https://supabase.com/) (PostgreSQL + Realtime + Row Level Security)[cite: 1]
+- Alerts: WhatsApp Web Direct (`wa.me`)[cite: 1]
 
 ## Accessible through the Live Web App Link:
 https://wajba-webapp.vercel.app/
