@@ -1,0 +1,91 @@
+<!-- ============================================================
+     PAGE: LANDING / AUTH (EMAIL + PASSWORD)
+     ============================================================ -->
+<div class="page active" id="page-landing">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6" style="background: linear-gradient(160deg, #064e3b 0%, #065f46 40%, #047857 100%);">
+    
+    <!-- Branding Header -->
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-1 ornament arabic-accent text-emerald-200">☪</div>
+      <div class="text-white text-opacity-70 text-xs tracking-widest ornament mb-2">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-wide">WAJBA - THE MEAL</h1>
+      <p class="text-emerald-200 text-xs font-medium mt-1">Multi-Masjid Mahallu Food Management System</p>
+    </div>
+
+    <!-- Auth Box -->
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-emerald-800/20">
+      
+      <!-- Tabs: Sign In / Create Account -->
+      <div class="flex border-b border-slate-100 bg-slate-50">
+        <button type="button" class="flex-1 py-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-800 bg-white" id="auth-tab-signin" onclick="setAuthMode('signin')">
+          Sign In
+        </button>
+        <button type="button" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent" id="auth-tab-signup" onclick="setAuthMode('signup')">
+          Create Account
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <form onsubmit="event.preventDefault(); handleAuthSubmit();" class="space-y-4">
+          
+          <!-- Sign Up only fields -->
+          <div id="auth-signup-fields" style="display:none;" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Your Full Name <span class="text-red-500">*</span></label>
+              <input type="text" id="auth-name" class="input-field text-sm" placeholder="e.g. Afreez Ibrahim">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number (+91) <span class="text-red-500">*</span></label>
+              <input type="tel" id="auth-phone" class="input-field text-sm" placeholder="9876543210" maxlength="10">
+            </div>
+          </div>
+
+          <!-- Common fields -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Email ID <span class="text-red-500">*</span></label>
+            <input type="email" id="auth-email" required class="input-field text-sm" placeholder="yourname@gmail.com">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Unique Password <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="auth-password" required class="input-field text-sm pr-10" placeholder="Enter your password">
+              <button type="button" onclick="togglePasswordVisibility('auth-password')" class="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full py-3 text-sm font-bold shadow-md hover:shadow-lg" id="auth-submit-btn">
+            Sign In
+          </button>
+        </form>
+
+        <!-- Fast 1-Click Role Login for Quick Testing -->
+        <div class="pt-4 border-t border-slate-100">
+          <p class="text-[11px] font-bold uppercase text-slate-400 text-center mb-2 tracking-wider">⚡ 1-Click Fast Login (Test Pre-Configured Roles)</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" onclick="quickTestLogin('admin')" class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-center transition">
+              <span class="text-lg block">👑</span>
+              <span class="text-[11px] font-bold text-emerald-800 block">Admin</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('ustad')" class="p-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-center transition">
+              <span class="text-lg block">👳</span>
+              <span class="text-[11px] font-bold text-amber-800 block">Ustad</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('delivery')" class="p-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-center transition">
+              <span class="text-lg block">🛵</span>
+              <span class="text-[11px] font-bold text-blue-800 block">Delivery</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('member')" class="p-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-center transition">
+              <span class="text-lg block">👤</span>
+              <span class="text-[11px] font-bold text-purple-800 block">Member</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-emerald-200 text-xs pt-4 font-medium opacity-80">
+      Secure Multi-Tenant Masjid Mahallu Platform • WAJBA
+    </p>
+  </div>
+</div>

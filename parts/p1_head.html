@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WAJBA - THE MEAL | Multi-Masjid Food Rotation</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          emerald: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+          amber:   { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309',800:'#92400e',900:'#78350f' },
+          slate:   { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+  * { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #f8fafc; color: #1e293b; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; font-weight: 600; font-size: 0.875rem; padding: 10px 18px; transition: all 0.15s ease; cursor: pointer; border: none; }
+  .btn-primary { background: #059669; color: #fff; }
+  .btn-primary:hover { background: #047857; }
+  .btn-secondary { background: #f1f5f9; color: #475569; }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-amber { background: #d97706; color: #fff; }
+  .btn-amber:hover { background: #b45309; }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-danger:hover { background: #fecaca; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; }
+  .badge-confirmed { background: #d1fae5; color: #065f46; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-delivered { background: #e0e7ff; color: #3730a3; }
+  .badge-swapped { background: #f3e8ff; color: #6b21a8; }
+  .badge-admin { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .badge-ustad { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .badge-delivery { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .badge-member { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+  .input-field { width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; font-size: 0.875rem; color: #1e293b; background: #fff; outline: none; transition: border-color 0.15s; }
+  .input-field:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.12); }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+  .modal.open { display: flex; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .toast { position: fixed; bottom: 24px; right: 24px; left: 24px; max-width: 420px; margin: 0 auto; background: #1e293b; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: 0.85rem; font-weight: 600; z-index: 10000; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transform: translateY(100px); opacity: 0; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .arabic-accent { font-family: 'Times New Roman', serif; }
+  .ornament { letter-spacing: 3px; }
+  .toggle { position: relative; width: 46px; height: 25px; background: #cbd5e1; border-radius: 9999px; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+  .toggle.on { background: #059669; }
+  .toggle::after { content:''; position:absolute; top:2.5px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .toggle.on::after { transform: translateX(21px); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #334155; vertical-align: middle; }
+  tr:hover td { background: #f8fafc; }
+  .stat-card { background: linear-gradient(135deg, var(--from), var(--to)); border-radius: 14px; padding: 16px; color: #fff; }
+  .mobile-admin-nav { display: flex; overflow-x: auto; gap: 6px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #e2e8f0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .mobile-admin-nav::-webkit-scrollbar { display: none; }
+  .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #64748b; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+  .sidebar-item:hover { background: #f0fdf4; color: #059669; }
+  .sidebar-item.active { background: #ecfdf5; color: #059669; border-left-color: #059669; }
+  .admin-sidebar { display: none; }
+  @media(min-width: 768px) {
+    .admin-sidebar { display: flex; flex-direction: column; width: 230px; background: #fff; border-right: 1px solid #e2e8f0; min-height: 100vh; position: fixed; left:0; top:0; z-index: 50; }
+    .admin-main { margin-left: 230px; }
+    .mobile-admin-nav { display: none !important; }
+  }
+  @media(max-width: 767px) {
+    .admin-main { margin-left: 0; }
+  }
+  .whatsapp-bubble { background: #dcf8c6; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-size: 0.8rem; color: #1a202c; position: relative; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+<div class="toast" id="toast"></div>

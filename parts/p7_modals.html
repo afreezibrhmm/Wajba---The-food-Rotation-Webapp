@@ -1,0 +1,382 @@
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Modal: Enroll New Masjid (Admin) -->
+<div class="modal" id="modal-enroll-masjid">
+  <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+    <div class="flex items-center justify-between p-5 border-b border-slate-100 bg-emerald-800 text-white">
+      <div>
+        <h3 class="font-bold text-lg">🕌 Enroll New Masjid</h3>
+        <p class="text-xs text-emerald-200">Register your Mahallu Masjid & generate unique Masjid ID</p>
+      </div>
+      <button onclick="closeModal('modal-enroll-masjid')" class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">✕</button>
+    </div>
+    
+    <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Masjid Name <span class="text-red-500">*</span></label>
+        <input type="text" id="enroll-masjid-name" class="input-field text-sm" placeholder="e.g. Markaz Jamia Masjid">
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Area / Locality <span class="text-red-500">*</span></label>
+          <input type="text" id="enroll-masjid-locality" class="input-field text-sm" placeholder="e.g. Central Ward">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">City / Town <span class="text-red-500">*</span></label>
+          <input type="text" id="enroll-masjid-city" class="input-field text-sm" placeholder="e.g. Kozhikode">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Unique Masjid ID</label>
+        <div class="flex gap-2">
+          <input type="text" id="enroll-masjid-id" class="input-field font-mono font-bold text-emerald-800 uppercase text-sm" placeholder="e.g. MSJ-7821">
+          <button type="button" onclick="generateRandomMasjidId()" class="btn btn-secondary text-xs whitespace-nowrap">⚡ Auto-Generate</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Users will enter this unique ID to search and log in under your Masjid.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Total Ustads Eating <span class="text-red-500">*</span></label>
+          <input type="number" id="enroll-masjid-ustad-count" class="input-field text-sm" value="3" min="1" max="50">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Admin Email</label>
+          <input type="email" id="enroll-masjid-admin-email" class="input-field bg-slate-100 text-sm" readonly>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Delivery Room / Location</label>
+        <input type="text" id="enroll-masjid-location" class="input-field text-sm" placeholder="e.g. Madrasa Room #2, Ground Floor">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Delivery Notes</label>
+        <textarea id="enroll-masjid-notes" class="input-field text-xs h-16" placeholder="e.g. Covered containers only. Please knock before entering."></textarea>
+      </div>
+
+      <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+        👑 <strong>Admin Access:</strong> You (<span id="enroll-admin-email-display" class="font-bold">your email</span>) will be automatically registered as the <strong>Admin</strong> for this Masjid.
+      </div>
+
+      <button class="btn btn-primary w-full py-3 font-bold text-sm shadow-md" onclick="executeEnrollMasjid()">
+        ✨ Enroll Masjid & Open Admin Dashboard
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Join Masjid Role Selection -->
+<div class="modal" id="modal-join-masjid">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Select Your Role</h3>
+        <p class="text-xs text-slate-500 mt-0.5" id="join-masjid-subtitle">Masjid Mahallu</p>
+      </div>
+      <button onclick="closeModal('modal-join-masjid')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    
+    <p class="text-xs text-slate-600 mb-4">How are you associated with this Masjid Mahallu?</p>
+    <input type="hidden" id="join-target-masjid-id">
+
+    <div class="space-y-3 mb-5">
+      <div class="p-3.5 border-2 border-purple-500 bg-purple-50/50 rounded-xl cursor-pointer hover:bg-purple-50 flex items-center gap-3 transition" onclick="confirmJoinWithRole('member')">
+        <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-xl flex-shrink-0">👤</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Jamath Member</p>
+          <p class="text-xs text-slate-500">Participate in meal duty rotations & community services (unlimited members)</p>
+        </div>
+      </div>
+
+      <div class="p-3.5 border-2 border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer hover:bg-emerald-50/50 flex items-center gap-3 transition" onclick="confirmJoinWithRole('delivery')">
+        <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xl flex-shrink-0">🛵</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Food Delivery Person / Household</p>
+          <p class="text-xs text-slate-500">Deliver food to Madrasa/Masjid on assigned dates</p>
+        </div>
+      </div>
+      
+      <div class="p-3.5 border-2 border-slate-200 hover:border-amber-500 rounded-xl cursor-pointer hover:bg-amber-50/40 flex items-center gap-3 transition" onclick="confirmJoinWithRole('ustad')">
+        <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-xl flex-shrink-0">👳</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Ustad (Scholar / Teacher)</p>
+          <p class="text-xs text-slate-500">Receive meals & view daily meal rotation</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2.5 rounded-lg bg-slate-100 text-center text-xs text-slate-500">
+      Need Admin rights? Each Jamath has strictly 1 trusted Jamath Representative (Admin).
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Member (Delivery Person / House / Admin) -->
+<div class="modal" id="modal-member">
+  <div class="bg-white rounded-2xl w-full max-w-lg" style="max-height:92vh; display:flex; flex-direction:column;">
+    <div class="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
+      <h3 class="font-bold text-slate-800 text-base" id="member-modal-title">Add Jamath Member</h3>
+      <button onclick="closeModal('modal-member')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+
+    <div class="overflow-y-auto flex-1 p-5 space-y-4">
+      <input type="hidden" id="edit-member-id">
+
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">🏠 Member Information</p>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">House Name / Number <span class="text-red-500">*</span></label>
+          <input type="text" class="input-field text-sm" id="m-house" placeholder="e.g. House #14 / Nur Villa">
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Head of Household / Person Name <span class="text-red-500">*</span></label>
+          <input type="text" class="input-field text-sm" id="m-head" placeholder="Full name">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number (+91) <span class="text-red-500">*</span></label>
+            <input type="tel" class="input-field text-sm" id="m-phone" placeholder="9876543210" maxlength="10">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">User Email ID</label>
+            <input type="email" class="input-field text-sm" id="m-email" placeholder="member@gmail.com">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Role</label>
+            <select class="input-field text-sm" id="m-role">
+              <option value="member">👤 Jamath Member (Unlimited)</option>
+              <option value="delivery">🛵 Food Delivery Person</option>
+              <option value="ustad">👳 Ustad</option>
+              <option value="admin">👑 Admin (Single Trusted Representative)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Zone / Ward</label>
+            <select class="input-field text-sm" id="m-zone">
+              <option>Zone A - North</option>
+              <option>Zone B - South</option>
+              <option>Zone C - East</option>
+              <option>Zone D - West</option>
+              <option>Zone E - Central</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-semibold text-slate-600">Active Status</label>
+          <div class="toggle on" id="m-active-toggle" onclick="toggleActive()"></div>
+          <input type="hidden" id="m-active" value="true">
+          <span class="text-xs text-slate-500" id="m-active-label">Active</span>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-200"></div>
+
+      <!-- Quick Duty Assign Section -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">📅 Assigned Duties</p>
+          <button type="button" class="btn btn-secondary text-xs py-1 px-2.5" onclick="toggleAddDutyForm()">+ Assign Duty</button>
+        </div>
+
+        <div id="add-duty-form" style="display:none;" class="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3 space-y-3">
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Duty Role</label>
+              <select class="input-field text-xs" id="duty-role">
+                <option value="member">👤 Member</option>
+                <option value="delivery">🛵 Delivery</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Duty Date</label>
+              <input type="date" class="input-field text-xs" id="duty-date">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Meal Slot</label>
+              <select class="input-field text-xs" id="duty-slot">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch" selected>Lunch</option>
+                <option value="snacks">Snacks</option>
+                <option value="dinner">Dinner</option>
+                <option value="fullday">Full Day</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary w-full text-xs py-2" onclick="addDutyAssignment()">
+            Save Duty Date
+          </button>
+        </div>
+
+        <div id="member-duties-list" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+      </div>
+
+    </div>
+
+    <div class="p-4 border-t border-slate-100 flex gap-2 flex-shrink-0">
+      <button onclick="closeModal('modal-member')" class="btn btn-secondary flex-1 text-xs">Cancel</button>
+      <button onclick="saveMember()" class="btn btn-primary flex-1 text-xs font-bold">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Self Assign Duty for Member -->
+<div class="modal" id="modal-self-assign-duty">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Assign / Choose My Duty</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Jamath Meal Rotation Roster</p>
+      </div>
+      <button onclick="closeModal('modal-self-assign-duty')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Participating Role <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm font-medium" id="self-duty-role">
+          <option value="member">👤 Jamath Member (Meal Contribution)</option>
+          <option value="delivery">🛵 Food Delivery Person (Direct Delivery)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Date <span class="text-red-500">*</span></label>
+        <input type="date" class="input-field text-sm" id="self-duty-date">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Meal Slot <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="self-duty-slot">
+          <option value="breakfast">Breakfast (7:30 AM)</option>
+          <option value="lunch" selected>Lunch (1:00 PM)</option>
+          <option value="snacks">Evening Snacks (4:30 PM)</option>
+          <option value="dinner">Dinner (8:00 PM)</option>
+          <option value="fullday">Full Day (All Meals)</option>
+        </select>
+      </div>
+      <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs text-purple-900 leading-relaxed">
+        ℹ️ As a Jamath member, scheduling your duty slot prepares meals for Hazrat Ustads and notifies the sole Jamath Representative.
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-1 shadow-md" onclick="saveSelfAssignedDuty()">
+        Confirm Duty Assignment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quick Assign Duty from Calendar (Admin) -->
+<div class="modal" id="modal-calendar-quick-duty">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Assign Duty to Roster</h3>
+        <p class="text-xs text-slate-500 mt-0.5" id="cal-duty-subtitle">Scheduled Jamath Rotation</p>
+      </div>
+      <button onclick="closeModal('modal-calendar-quick-duty')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Jamath Member / House <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="cal-duty-house" onchange="syncCalDutyRoleWithMember()">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Role <span class="text-red-500">*</span></label>
+          <select class="input-field text-sm" id="cal-duty-role">
+            <option value="member">👤 Jamath Member</option>
+            <option value="delivery">🛵 Food Delivery</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Date <span class="text-red-500">*</span></label>
+          <input type="date" class="input-field text-sm" id="cal-duty-date">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Meal Slot <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="cal-duty-slot">
+          <option value="breakfast">Breakfast (7:30 AM)</option>
+          <option value="lunch" selected>Lunch (1:00 PM)</option>
+          <option value="snacks">Evening Snacks (4:30 PM)</option>
+          <option value="dinner">Dinner (8:00 PM)</option>
+          <option value="fullday">Full Day</option>
+        </select>
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-2 shadow-md" onclick="saveCalendarQuickDuty()">
+        Assign to Roster
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Ustad -->
+<div class="modal" id="modal-ustad">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-800 text-base" id="ustad-modal-title">Add Ustad</h3>
+      <button onclick="closeModal('modal-ustad')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    
+    <div class="space-y-3">
+      <input type="hidden" id="edit-ustad-id">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Scholar Name <span class="text-red-500">*</span></label>
+        <input type="text" class="input-field text-sm" id="u-name" placeholder="e.g. Hazrat Ustad Abdullah">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Ustad Email (for login)</label>
+        <input type="email" class="input-field text-sm" id="u-email" placeholder="ustad@gmail.com">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Madrasa Room</label>
+          <input type="text" class="input-field text-sm" id="u-room" placeholder="Room #1">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Subject / Role</label>
+          <input type="text" class="input-field text-sm" id="u-subject" placeholder="Hifz / Kitab">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Dietary Preferences</label>
+        <input type="text" class="input-field text-sm" id="u-diet" placeholder="e.g. Less spicy, Vegetarian">
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-2" onclick="saveUstad()">
+        Save Ustad
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Database Setup -->
+<div class="modal" id="modal-db-setup">
+  <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-slate-800 text-base">Supabase Cloud Database</h3>
+      <button onclick="closeModal('modal-db-setup')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">
+      Connected to Supabase Project. All multi-tenant data is synced locally and to cloud.
+    </p>
+    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 space-y-1">
+      <p>🟢 <strong>Status:</strong> Cloud Sync Ready</p>
+      <p>🌐 <strong>Project:</strong> momwcmngzrqsjjkwsvgx.supabase.co</p>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button onclick="testDbConnection()" class="btn btn-primary flex-1 text-xs">Test Connection</button>
+      <button onclick="closeModal('modal-db-setup')" class="btn btn-secondary flex-1 text-xs">Close</button>
+    </div>
+  </div>
+</div>

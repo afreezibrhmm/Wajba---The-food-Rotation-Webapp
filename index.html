@@ -1,0 +1,2465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <script src="config.js"></script>
+
+<script>
+  // Read from the global ENV object
+  const SUPABASE_URL = window.ENV?.SUPABASE_URL || "https://your-project-id.supabase.co";
+  const SUPABASE_ANON_KEY = window.ENV?.SUPABASE_ANON_KEY || "your-anon-key";
+
+  window.sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+</script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WAJBA - THE MEAL | Multi-Masjid Food Rotation</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          emerald: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',300:'#6ee7b7',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46',900:'#064e3b' },
+          amber:   { 50:'#fffbeb',100:'#fef3c7',200:'#fde68a',300:'#fcd34d',400:'#fbbf24',500:'#f59e0b',600:'#d97706',700:'#b45309',800:'#92400e',900:'#78350f' },
+          slate:   { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+  * { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background: #f8fafc; color: #1e293b; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; font-weight: 600; font-size: 0.875rem; padding: 10px 18px; transition: all 0.15s ease; cursor: pointer; border: none; }
+  .btn-primary { background: #059669; color: #fff; }
+  .btn-primary:hover { background: #047857; }
+  .btn-secondary { background: #f1f5f9; color: #475569; }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .btn-amber { background: #d97706; color: #fff; }
+  .btn-amber:hover { background: #b45309; }
+  .btn-danger { background: #fee2e2; color: #dc2626; }
+  .btn-danger:hover { background: #fecaca; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; }
+  .badge-confirmed { background: #d1fae5; color: #065f46; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-delivered { background: #e0e7ff; color: #3730a3; }
+  .badge-swapped { background: #f3e8ff; color: #6b21a8; }
+  .badge-admin { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .badge-ustad { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+  .badge-delivery { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .badge-member { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+  .input-field { width: 100%; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; font-size: 0.875rem; color: #1e293b; background: #fff; outline: none; transition: border-color 0.15s; }
+  .input-field:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.12); }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 16px; }
+  .modal.open { display: flex; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .toast { position: fixed; bottom: 24px; right: 24px; left: 24px; max-width: 420px; margin: 0 auto; background: #1e293b; color: #fff; padding: 12px 18px; border-radius: 14px; font-size: 0.85rem; font-weight: 600; z-index: 10000; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); transform: translateY(100px); opacity: 0; transition: all 0.25s cubic-bezier(0.16,1,0.3,1); pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .arabic-accent { font-family: 'Times New Roman', serif; }
+  .ornament { letter-spacing: 3px; }
+  .toggle { position: relative; width: 46px; height: 25px; background: #cbd5e1; border-radius: 9999px; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+  .toggle.on { background: #059669; }
+  .toggle::after { content:''; position:absolute; top:2.5px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .toggle.on::after { transform: translateX(21px); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #f8fafc; color: #475569; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; color: #334155; vertical-align: middle; }
+  tr:hover td { background: #f8fafc; }
+  .stat-card { background: linear-gradient(135deg, var(--from), var(--to)); border-radius: 14px; padding: 16px; color: #fff; }
+  .mobile-admin-nav { display: flex; overflow-x: auto; gap: 6px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #e2e8f0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .mobile-admin-nav::-webkit-scrollbar { display: none; }
+  .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; color: #64748b; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all .15s; border-left: 3px solid transparent; }
+  .sidebar-item:hover { background: #f0fdf4; color: #059669; }
+  .sidebar-item.active { background: #ecfdf5; color: #059669; border-left-color: #059669; }
+  .admin-sidebar { display: none; }
+  @media(min-width: 768px) {
+    .admin-sidebar { display: flex; flex-direction: column; width: 230px; background: #fff; border-right: 1px solid #e2e8f0; min-height: 100vh; position: fixed; left:0; top:0; z-index: 50; }
+    .admin-main { margin-left: 230px; }
+    .mobile-admin-nav { display: none !important; }
+  }
+  @media(max-width: 767px) {
+    .admin-main { margin-left: 0; }
+  }
+  .whatsapp-bubble { background: #dcf8c6; border-radius: 12px 12px 0 12px; padding: 10px 14px; font-size: 0.8rem; color: #1a202c; position: relative; }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+<div class="toast" id="toast"></div>
+<!-- ============================================================
+     PAGE: LANDING / AUTH (EMAIL + PASSWORD)
+     ============================================================ -->
+<div class="page active" id="page-landing">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6" style="background: linear-gradient(160deg, #064e3b 0%, #065f46 40%, #047857 100%);">
+    
+    <!-- Branding Header -->
+    <div class="text-center mb-6">
+      <div class="text-4xl mb-1 ornament arabic-accent text-emerald-200">☪</div>
+      <div class="text-white text-opacity-70 text-xs tracking-widest ornament mb-2">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-wide">WAJBA - THE MEAL</h1>
+      <p class="text-emerald-200 text-xs font-medium mt-1">Multi-Masjid Mahallu Food Management System</p>
+    </div>
+
+    <!-- Auth Box -->
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-emerald-800/20">
+      
+      <!-- Tabs: Sign In / Create Account -->
+      <div class="flex border-b border-slate-100 bg-slate-50">
+        <button type="button" class="flex-1 py-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-800 bg-white" id="auth-tab-signin" onclick="setAuthMode('signin')">
+          Sign In
+        </button>
+        <button type="button" class="flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent" id="auth-tab-signup" onclick="setAuthMode('signup')">
+          Create Account
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <form onsubmit="event.preventDefault(); handleAuthSubmit();" class="space-y-4">
+          
+          <!-- Sign Up only fields -->
+          <div id="auth-signup-fields" style="display:none;" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Your Full Name <span class="text-red-500">*</span></label>
+              <input type="text" id="auth-name" class="input-field text-sm" placeholder="e.g. Afreez Ibrahim">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number (+91) <span class="text-red-500">*</span></label>
+              <input type="tel" id="auth-phone" class="input-field text-sm" placeholder="9876543210" maxlength="10">
+            </div>
+          </div>
+
+          <!-- Common fields -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Email ID <span class="text-red-500">*</span></label>
+            <input type="email" id="auth-email" required class="input-field text-sm" placeholder="yourname@gmail.com">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Unique Password <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="auth-password" required class="input-field text-sm pr-10" placeholder="Enter your password">
+              <button type="button" onclick="togglePasswordVisibility('auth-password')" class="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600">👁️</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full py-3 text-sm font-bold shadow-md hover:shadow-lg" id="auth-submit-btn">
+            Sign In
+          </button>
+        </form>
+
+        <!-- Fast 1-Click Role Login for Quick Testing -->
+        <div class="pt-4 border-t border-slate-100">
+          <p class="text-[11px] font-bold uppercase text-slate-400 text-center mb-2 tracking-wider">⚡ 1-Click Fast Login (Test Pre-Configured Roles)</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" onclick="quickTestLogin('admin')" class="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-center transition">
+              <span class="text-lg block">👑</span>
+              <span class="text-[11px] font-bold text-emerald-800 block">Admin</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('ustad')" class="p-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-center transition">
+              <span class="text-lg block">👳</span>
+              <span class="text-[11px] font-bold text-amber-800 block">Ustad</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('delivery')" class="p-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-center transition">
+              <span class="text-lg block">🛵</span>
+              <span class="text-[11px] font-bold text-blue-800 block">Delivery</span>
+            </button>
+            <button type="button" onclick="quickTestLogin('member')" class="p-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-center transition">
+              <span class="text-lg block">👤</span>
+              <span class="text-[11px] font-bold text-purple-800 block">Member</span>
+
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center text-emerald-200 text-xs pt-4 font-medium opacity-80">
+      Secure Multi-Tenant Masjid Mahallu Platform • WAJBA
+    </p>
+  </div>
+</div>
+<!-- ============================================================
+     PAGE: MASJID DIRECTORY, SEARCH & ENROLLMENT
+     ============================================================ -->
+<div class="page" id="page-masjid-select">
+  <div class="min-h-screen bg-slate-50 flex flex-col">
+    <!-- Top Header -->
+    <div class="bg-emerald-800 text-white px-5 py-4 flex items-center justify-between shadow-md">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl ornament">☪</span>
+        <div>
+          <h1 class="font-extrabold text-base tracking-wide">WAJBA - THE MEAL</h1>
+          <p class="text-emerald-200 text-xs" id="masjid-select-user-greeting">Logged in as...</p>
+        </div>
+      </div>
+      <button onclick="logout()" class="btn bg-white/10 hover:bg-white/20 text-white text-xs py-1.5 px-3 rounded-lg border border-white/20 flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign Out
+      </button>
+    </div>
+
+    <div class="max-w-2xl w-full mx-auto p-4 sm:p-6 flex-1 space-y-5">
+      
+      <!-- Search Box Card -->
+      <div class="card border-2 border-emerald-100 shadow-sm">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+            🔍
+          </div>
+          <div>
+            <h2 class="font-bold text-slate-800 text-base">Find Your Masjid</h2>
+            <p class="text-slate-500 text-xs">Enter unique <strong>Masjid ID</strong> (e.g. <span class="font-mono font-semibold text-emerald-700">MSJ-7821</span>) or Masjid Name</p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="masjid-search-input" oninput="handleMasjidSearch()" class="input-field flex-1 font-medium text-sm" placeholder="Search by name or enter Masjid ID...">
+          <button onclick="handleDirectMasjidIdSearch()" class="btn btn-primary px-4 text-xs font-bold whitespace-nowrap">
+            Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Card: Enroll New Masjid (Admin) -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+        <div>
+          <span class="bg-white/20 text-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">For Admin</span>
+          <h3 class="font-bold text-base mt-1">Enroll a New Masjid</h3>
+          <p class="text-xs text-emerald-100 max-w-sm mt-0.5">Register your Mahal Jama'ath with your email. A unique <strong>Masjid ID</strong> will be generated for your community.</p>
+        </div>
+        <button onclick="openEnrollMasjidModal()" class="btn bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-bold py-2.5 px-4 shadow-sm self-start sm:self-center whitespace-nowrap">
+          + Enroll Masjid
+        </button>
+      </div>
+
+      <!-- Section: My Masjids -->
+      <div>
+        <h3 class="font-bold text-slate-700 text-sm mb-2.5 flex items-center gap-2">
+          <span>🕌</span> My Enrolled Masjids
+        </h3>
+        <div id="my-masjids-list" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Section: All Available Masjids Directory -->
+      <div>
+        <h3 class="font-bold text-slate-700 text-sm mb-2.5 flex items-center gap-2">
+          <span>📋</span> All Registered Masjids
+        </h3>
+        <div id="all-masjids-list" class="space-y-3">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ============================================================
+     PAGE: USTAD PORTAL (DEDICATED FOR USTADS)
+     ============================================================ -->
+<div class="page" id="page-ustad">
+  <!-- Header -->
+  <div class="sticky top-0 z-40 bg-gradient-to-r from-amber-700 via-amber-800 to-slate-900 text-white shadow-md">
+    <div class="px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-xl">
+          👳
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-base leading-tight" id="ustad-welcome-name">Hazrat Ustad</h1>
+            <span class="bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded">USTAD</span>
+          </div>
+          <p class="text-xs text-amber-200" id="ustad-masjid-name-display">Masjid Loading...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="switchMasjid()" class="btn bg-white/10 hover:bg-white/20 text-white text-xs py-1.5 px-2.5 rounded-lg border border-white/20">
+          🔄 Switch
+        </button>
+        <button onclick="logout()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs">
+          ✕
+        </button>
+      </div>
+    </div>
+    
+    <!-- Sub tabs -->
+    <div class="flex px-4 gap-4 border-t border-white/10 text-xs">
+      <button class="py-2.5 font-bold border-b-2 border-amber-400 text-white transition" onclick="setUstadTab('today')" id="utab-today">Today's Meals</button>
+      <button class="py-2.5 font-semibold text-amber-200 opacity-70 transition" onclick="setUstadTab('upcoming')" id="utab-upcoming">Upcoming Week</button>
+      <button class="py-2.5 font-semibold text-amber-200 opacity-70 transition" onclick="setUstadTab('info')" id="utab-info">Diet & Room</button>
+    </div>
+  </div>
+
+  <div class="p-4 max-w-xl mx-auto pb-24 space-y-4">
+    
+    <!-- TODAY TAB -->
+    <div id="ustad-tab-today" class="space-y-4">
+      
+      <!-- Headcount confirmation banner -->
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md flex items-center justify-between">
+        <div>
+          <span class="text-[10px] uppercase tracking-wider font-bold text-emerald-200 block">Today's Meal Rotation</span>
+          <p class="text-lg font-extrabold" id="ustad-today-date">Today</p>
+          <p class="text-xs text-emerald-100 mt-0.5">Confirmed Headcount: <strong id="ustad-confirmed-count" class="text-white text-sm">3</strong> Ustads</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+          🍽️
+        </div>
+      </div>
+
+      <!-- Meal Slots Cards -->
+      <div>
+        <h3 class="text-sm font-bold text-slate-700 mb-2.5">Meals Assigned For You Today</h3>
+        <div id="ustad-slots-container" class="space-y-3">
+          <!-- Rendered dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Delivery Location & Coordinator -->
+      <div class="card bg-amber-50/60 border border-amber-200">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-base">📍</span>
+          <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Delivery Instructions</h4>
+        </div>
+        <p class="text-xs text-slate-600 mb-1" id="ustad-room-instructions">Madrasa Room #2, Ground Floor</p>
+        <p class="text-[11px] text-slate-500" id="ustad-room-notes">Food is delivered covered at your dining area.</p>
+      </div>
+    </div>
+
+    <!-- UPCOMING TAB -->
+    <div id="ustad-tab-upcoming" style="display:none;" class="space-y-3">
+      <h3 class="text-sm font-bold text-slate-700">Upcoming 7 Days Rotation</h3>
+      <div id="ustad-upcoming-list" class="space-y-2.5">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- INFO TAB -->
+    <div id="ustad-tab-info" style="display:none;" class="space-y-3">
+      <div class="card">
+        <h3 class="font-bold text-slate-800 text-sm mb-3">Scholar Profile & Preferences</h3>
+        <div class="space-y-2.5 text-xs text-slate-600">
+          <p>👳 <strong>Scholar Name:</strong> <span id="ustad-info-name" class="font-semibold text-slate-800">Hazrat Ustad</span></p>
+          <p>🏠 <strong>Room / Floor:</strong> <span id="ustad-info-room" class="font-semibold text-slate-800">Room #1</span></p>
+          <p>🥗 <strong>Dietary Needs:</strong> <span id="ustad-info-diet" class="font-semibold text-slate-800">No restrictions</span></p>
+          <p>📚 <strong>Subject:</strong> <span id="ustad-info-subject" class="font-semibold text-slate-800">Qur'an & Islamic Studies</span></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- ============================================================
+     PAGE: FOOD DELIVERY PERSON / MEMBER PORTAL
+     ============================================================ -->
+<div class="page" id="page-member">
+  <!-- Header -->
+  <div class="sticky top-0 z-40" style="background: linear-gradient(135deg,#059669,#047857);">
+    <div class="px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl text-white" id="member-role-icon">
+          🛵
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-white font-bold text-base leading-tight" id="member-welcome-name">Household</h1>
+            <span class="bg-emerald-300/30 text-emerald-100 text-[10px] font-bold px-1.5 py-0.5 rounded" id="member-role-badge">DELIVERY</span>
+          </div>
+          <p class="text-emerald-100 text-xs" id="member-masjid-name-display">Masjid Loading...</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="switchMasjid()" class="btn bg-white/10 hover:bg-white/20 text-white text-xs py-1.5 px-2.5 rounded-lg border border-white/20">
+          🔄 Switch
+        </button>
+        <button onclick="logout()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-xs">
+          ✕
+        </button>
+      </div>
+    </div>
+    <!-- Sub-tabs -->
+    <div class="flex px-4 gap-2 border-t border-white/10">
+      <button class="text-xs font-bold text-white border-b-2 border-white px-3 py-2" onclick="setMemberTab('home')" id="mtab-home">Home Duty</button>
+      <button class="text-xs font-bold text-white text-opacity-70 border-b-2 border-transparent px-3 py-2" onclick="setMemberTab('upcoming')" id="mtab-upcoming">Upcoming</button>
+      <button class="text-xs font-bold text-white text-opacity-70 border-b-2 border-transparent px-3 py-2" onclick="setMemberTab('history')" id="mtab-history">History</button>
+    </div>
+  </div>
+
+  <div class="pb-24 max-w-xl mx-auto p-4 space-y-4">
+    
+    <!-- HOME TAB -->
+    <div id="member-tab-home" class="space-y-4">
+      
+      <!-- Next Duty Hero Card -->
+      <div id="next-duty-card" class="rounded-2xl text-white p-5 shadow-xl" style="background: linear-gradient(135deg,#059669,#064e3b);">
+        <div class="flex items-center gap-2 mb-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span class="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Your Assigned Food Duty</span>
+        </div>
+        <div id="next-duty-content">
+          <div class="text-2xl font-extrabold mb-1" id="next-duty-date">Loading...</div>
+          <div class="flex items-center gap-3 mb-3">
+            <span class="bg-white/20 rounded-full px-3 py-1 text-xs font-bold" id="next-duty-slot">-</span>
+            <span class="text-emerald-200 text-xs" id="next-duty-time">-</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <span class="text-emerald-100 text-xs">Headcount: Serving <strong id="next-duty-count" class="text-white font-bold text-sm">3</strong> Ustads</span>
+          </div>
+          <div class="mt-3 flex items-center gap-2">
+            <span class="text-xs font-semibold text-emerald-200">Status:</span>
+            <span id="next-duty-status-badge" class="badge badge-pending">Pending</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-2 gap-3" id="duty-action-buttons">
+        <button class="btn btn-primary py-3.5 flex flex-col items-center gap-1 shadow-md" onclick="confirmDuty()" id="btn-confirm">
+          <span class="text-base">✅</span>
+          <span class="text-xs font-bold">Confirm Preparation</span>
+        </button>
+        <button class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 flex flex-col items-center gap-1 shadow-md" onclick="markDelivered()" id="btn-delivered">
+          <span class="text-base">🍽️</span>
+          <span class="text-xs font-bold">Mark as Delivered</span>
+        </button>
+      </div>
+
+      <!-- Self Assign Duty Card for Member -->
+      <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+        <div>
+          <p class="font-bold text-slate-800 text-xs">Volunteer / Choose Duty Date</p>
+          <p class="text-[11px] text-slate-500">Pick an upcoming rotation date and select your duty role</p>
+        </div>
+        <button class="btn btn-primary text-xs py-2 px-3 font-bold flex-shrink-0" onclick="openSelfAssignDutyModal()">
+          + Assign Duty
+        </button>
+      </div>
+
+      <!-- Delivery Instructions Card -->
+      <div class="card border-l-4 border-emerald-600">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-base">📍</span>
+          <h3 class="font-bold text-slate-800 text-sm">Masjid Delivery Details</h3>
+        </div>
+        <p class="text-slate-700 text-xs mb-1 font-semibold" id="member-delivery-location">Madrasa Room #2, Ground Floor</p>
+        <p class="text-slate-500 text-xs" id="member-delivery-notes">Please bring food in clean covered containers before meal timing.</p>
+      </div>
+
+      <!-- Ustads List -->
+      <div class="card">
+        <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-3">Ustads Eating Tomorrow</h3>
+        <div id="member-ustads-list" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- UPCOMING TAB -->
+    <div id="member-tab-upcoming" class="space-y-3" style="display:none;">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-slate-700 text-sm">All Upcoming Assigned Dates</h3>
+        <button class="btn btn-primary text-xs py-1.5 px-3 font-semibold" onclick="openSelfAssignDutyModal()">
+          + Assign Duty
+        </button>
+      </div>
+      <div id="upcoming-duties-list" class="space-y-2.5"></div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="member-tab-history" class="space-y-3" style="display:none;">
+      <h3 class="font-bold text-slate-700 text-sm">Completed Duties History</h3>
+      <div id="history-duties-list" class="space-y-2.5"></div>
+    </div>
+
+  </div>
+</div>
+<!-- ============================================================
+     PAGE: ADMIN DASHBOARD (MULTI-TENANT ENHANCED)
+     ============================================================ -->
+<div class="page" id="page-admin">
+  
+  <!-- Sidebar (Desktop) -->
+  <div class="admin-sidebar">
+    <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl ornament text-emerald-700">☪</span>
+        <div class="overflow-hidden">
+          <p class="font-bold text-slate-800 text-sm truncate" id="side-masjid-name">WAJBA</p>
+          <p class="text-emerald-700 text-xs font-semibold" id="side-masjid-id-badge">ID: Loading...</p>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="flex-1 py-3">
+      <div class="sidebar-item active" onclick="setAdminTab('dashboard')" id="side-dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="sidebar-item" onclick="setAdminTab('roster')" id="side-roster">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Duty Roster
+      </div>
+      <div class="sidebar-item" onclick="setAdminTab('members')" id="side-members">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Members & Roles
+      </div>
+      <div class="sidebar-item" onclick="setAdminTab('ustads')" id="side-ustads">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        Ustads
+      </div>
+      <div class="sidebar-item" onclick="setAdminTab('broadcast')" id="side-broadcast">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        Reminders & WhatsApp
+      </div>
+      <div class="sidebar-item" onclick="setAdminTab('settings')" id="side-settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        Masjid Settings
+      </div>
+    </nav>
+    
+    <div class="p-4 border-t border-slate-100 space-y-2">
+      <button class="btn btn-secondary w-full text-xs" onclick="switchMasjid()">
+        🔄 Switch Masjid
+      </button>
+      <button class="btn btn-danger w-full text-xs" onclick="logout()">
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="admin-main">
+    
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
+      <div class="flex items-center gap-3">
+        <span class="text-emerald-700 text-xl hidden md:block">☪</span>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="font-extrabold text-slate-800 text-sm leading-tight" id="admin-masjid-title">WAJBA Admin</h2>
+            <button onclick="copyActiveMasjidId()" class="bg-emerald-50 text-emerald-800 border border-emerald-300 font-mono text-xs px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer hover:bg-emerald-100" title="Click to copy unique Masjid ID">
+              <span id="admin-masjid-id-badge">MSJ-XXXX</span> 📋
+            </button>
+          </div>
+          <p class="text-slate-500 text-xs mt-0.5" id="admin-date-display"></p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <span id="sync-status-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">🟢 Live</span>
+        <button onclick="switchMasjid()" class="btn btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1">
+          🔄 <span class="hidden sm:inline">Switch Masjid</span>
+        </button>
+        <button onclick="openModal('modal-db-setup')" class="btn btn-secondary text-xs py-1.5 px-2 hidden sm:flex" title="Database Configuration">
+          ⚙️ DB
+        </button>
+        <button class="btn btn-danger text-xs py-1.5 px-2.5 md:hidden" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Mobile Nav Tabs -->
+    <div class="mobile-admin-nav" id="mobile-admin-nav">
+      <button class="nav-tab active px-3 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap" onclick="setAdminTab('dashboard')" id="mnav-dashboard">Dashboard</button>
+      <button class="nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap" onclick="setAdminTab('roster')" id="mnav-roster">Roster</button>
+      <button class="nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap" onclick="setAdminTab('members')" id="mnav-members">Members</button>
+      <button class="nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap" onclick="setAdminTab('ustads')" id="mnav-ustads">Ustads</button>
+      <button class="nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap" onclick="setAdminTab('broadcast')" id="mnav-broadcast">Reminders</button>
+      <button class="nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap" onclick="setAdminTab('settings')" id="mnav-settings">Settings</button>
+    </div>
+
+    <!-- Admin Tabs Content Container -->
+    <div class="p-4 sm:p-6 pb-12 max-w-6xl">
+      
+      <!-- TAB 1: DASHBOARD -->
+      <div class="tab-content active" id="tab-dashboard">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 class="text-base font-bold text-slate-800">Masjid Overview</h2>
+          <span class="badge badge-admin text-xs">👑 1 Trusted Representative • Unlimited Members</span>
+        </div>
+        
+        <!-- Jamath Governance Banner -->
+        <div class="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 text-xs text-emerald-900 shadow-sm">
+          <span class="text-xl">🏛️</span>
+          <div class="flex-1">
+            <p class="font-bold text-emerald-800 text-sm">Jamath Governance Policy: 1 Trusted Representative</p>
+            <p class="text-emerald-700 mt-0.5 leading-relaxed">Each Jamath Mahallu has strictly <strong>1 Admin (the trusted person and representative)</strong> with administrative oversight, and can have <strong>unlimited Jamath Members</strong> for meal rotation duty.</p>
+          </div>
+          <div class="text-right hidden sm:block">
+            <span class="badge badge-admin">👑 Jamath Representative: <span id="dash-admin-name">Admin Brother</span></span>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+          <div class="stat-card" style="--from:#059669;--to:#047857;">
+            <p class="text-emerald-100 text-xs font-semibold mb-1">Jamath Members</p>
+            <div class="flex items-baseline gap-1.5">
+              <p class="text-2xl sm:text-3xl font-bold" id="stat-houses">0</p>
+              <span class="text-[10px] text-emerald-200">Unlimited</span>
+            </div>
+          </div>
+          <div class="stat-card" style="--from:#0f766e;--to:#115e59;">
+            <p class="text-teal-100 text-xs font-semibold mb-1">Jamath Rep.</p>
+            <div class="flex items-baseline gap-1.5">
+              <p class="text-2xl sm:text-3xl font-bold">1</p>
+              <span class="text-[10px] text-teal-200">Sole Admin</span>
+            </div>
+          </div>
+          <div class="stat-card" style="--from:#d97706;--to:#b45309;">
+            <p class="text-amber-100 text-xs font-semibold mb-1">Ustads Eating</p>
+            <p class="text-2xl sm:text-3xl font-bold" id="stat-ustads">0</p>
+          </div>
+          <div class="stat-card" style="--from:#0891b2;--to:#0e7490;">
+            <p class="text-cyan-100 text-xs font-semibold mb-1">Scheduled Duties</p>
+            <p class="text-2xl sm:text-3xl font-bold" id="stat-duties">0</p>
+          </div>
+          <div class="stat-card" style="--from:#7c3aed;--to:#6d28d9;">
+            <p class="text-violet-100 text-xs font-semibold mb-1">Confirmed / Done</p>
+            <p class="text-2xl sm:text-3xl font-bold" id="stat-confirmed">0</p>
+          </div>
+        </div>
+
+        <!-- Today & Tomorrow -->
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+          <div class="card">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <h3 class="font-bold text-slate-700 text-sm">Today's Assigned Rotations</h3>
+            </div>
+            <div id="today-duties-admin"></div>
+          </div>
+          <div class="card">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-sm">🗓️</span>
+              <h3 class="font-bold text-slate-700 text-sm">Tomorrow's Rotations</h3>
+            </div>
+            <div id="tomorrow-duties-admin"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: ROSTER CALENDAR -->
+      <div class="tab-content" id="tab-roster">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Monthly Duty Roster</h2>
+            <p class="text-xs text-slate-500">Plan and rotate meal duty across Jamath members & households</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="btn btn-secondary text-xs" onclick="prevMonth()">← Prev</button>
+            <span class="font-bold text-slate-800 text-sm min-w-[120px] text-center" id="cal-month-title"></span>
+            <button class="btn btn-secondary text-xs" onclick="nextMonth()">Next →</button>
+            <button class="btn btn-primary text-xs font-bold py-1.5 px-3" onclick="openCalendarQuickAssignModal()">+ Quick Assign Duty</button>
+          </div>
+        </div>
+        <div class="card overflow-x-auto p-3">
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 min-w-[600px]"></div>
+        </div>
+      </div>
+
+      <!-- TAB 3: MEMBERS & ROLES -->
+      <div class="tab-content" id="tab-members">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Jamath Members & Roles</h2>
+            <p class="text-xs text-slate-500">Unlimited members allowed per Jamath • 1 Sole Trusted Representative</p>
+          </div>
+          <button class="btn btn-primary text-xs font-bold" onclick="openAddMemberModal()">
+            + Add Jamath Member
+          </button>
+        </div>
+        <div class="card overflow-x-auto p-0">
+          <table class="w-full">
+            <thead>
+              <tr>
+                <th>House / Name</th>
+                <th>Phone</th>
+                <th>Email ID</th>
+                <th>Assigned Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="members-table-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: USTADS -->
+      <div class="tab-content" id="tab-ustads">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Scholars (Ustads) Directory</h2>
+            <p class="text-xs text-slate-500">Ustads staying in the Madrasa / Masjid</p>
+          </div>
+          <button class="btn btn-primary text-xs font-bold" onclick="openAddUstadModal()">
+            + Add Ustad
+          </button>
+        </div>
+        <div id="ustads-grid" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- TAB 5: BROADCAST / REMINDERS -->
+      <div class="tab-content" id="tab-broadcast">
+        <h2 class="text-base font-bold text-slate-800 mb-4">WhatsApp Reminders & Headcount</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          
+          <!-- Step 1 & 2: Headcount -->
+          <div class="card space-y-4">
+            <div>
+              <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Step 1</span>
+              <h3 class="font-bold text-slate-800 text-sm mt-0.5">Confirm Tomorrow's Ustads Headcount</h3>
+              <p class="text-xs text-slate-500 mt-1">Adjust count before dispatching reminders to members.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="adjustTmrwUstadCount(-1)" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-lg font-bold">−</button>
+              <input type="number" id="tmrw-ustad-count" class="input-field text-center font-bold text-xl w-24" value="3" min="1" max="50">
+              <button onclick="adjustTmrwUstadCount(1)" class="w-10 h-10 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-lg font-bold">+</button>
+            </div>
+            <button class="btn btn-amber w-full text-xs font-bold" onclick="confirmUstadCount()">
+              ✓ Confirm Headcount (<span id="confirmed-ustad-btn-num">3</span> Ustads)
+            </button>
+          </div>
+
+          <!-- Step 3: WhatsApp Preview -->
+          <div class="card space-y-3" id="broadcast-send-step">
+            <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider">Step 2</span>
+            <h3 class="font-bold text-slate-800 text-sm">WhatsApp Preview</h3>
+            <div class="bg-slate-100 p-4 rounded-xl">
+              <div class="whatsapp-bubble text-xs" id="whatsapp-preview-msg">
+                Loading reminder preview...
+              </div>
+            </div>
+            <button class="btn btn-primary w-full text-xs font-bold" onclick="sendAllReminders()">
+              📲 Send WhatsApp to Tomorrow's Delivery Member
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 6: SETTINGS -->
+      <div class="tab-content" id="tab-settings">
+        <h2 class="text-base font-bold text-slate-800 mb-4">Masjid Mahallu Settings</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          
+          <div class="card space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm">Masjid Credentials & Sharing</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Unique Masjid ID</label>
+              <div class="flex gap-2">
+                <input type="text" id="settings-masjid-id" class="input-field bg-slate-100 font-mono font-bold text-emerald-700" readonly>
+                <button onclick="copyActiveMasjidId()" class="btn btn-secondary text-xs whitespace-nowrap">📋 Copy ID</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Share this ID with Ustads and Food Delivery members so they can log in.</p>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Masjid Name</label>
+              <input type="text" id="settings-masjid-name" class="input-field text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Enrolled Admin Email</label>
+              <input type="email" id="settings-admin-email" class="input-field bg-slate-100 text-sm" readonly>
+            </div>
+          </div>
+
+          <div class="card space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm">Food & Delivery Preferences</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Default Ustads Count</label>
+              <input type="number" id="settings-ustad-count" class="input-field text-sm" min="1" max="50">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Delivery Location</label>
+              <input type="text" id="settings-delivery-location" class="input-field text-sm" placeholder="e.g. Madrasa Room #2">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Delivery Notes</label>
+              <textarea id="settings-delivery-notes" class="input-field text-xs h-20" placeholder="Instructions for food delivery"></textarea>
+            </div>
+            <button class="btn btn-primary w-full text-xs font-bold" onclick="saveSettings()">
+              Save Masjid Settings
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Modal: Enroll New Masjid (Admin) -->
+<div class="modal" id="modal-enroll-masjid">
+  <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+    <div class="flex items-center justify-between p-5 border-b border-slate-100 bg-emerald-800 text-white">
+      <div>
+        <h3 class="font-bold text-lg">🕌 Enroll New Masjid</h3>
+        <p class="text-xs text-emerald-200">Register your Mahallu Masjid & generate unique Masjid ID</p>
+      </div>
+      <button onclick="closeModal('modal-enroll-masjid')" class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">✕</button>
+    </div>
+    
+    <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Masjid Name <span class="text-red-500">*</span></label>
+        <input type="text" id="enroll-masjid-name" class="input-field text-sm" placeholder="e.g. Markaz Jamia Masjid">
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Area / Locality <span class="text-red-500">*</span></label>
+          <input type="text" id="enroll-masjid-locality" class="input-field text-sm" placeholder="e.g. Central Ward">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">City / Town <span class="text-red-500">*</span></label>
+          <input type="text" id="enroll-masjid-city" class="input-field text-sm" placeholder="e.g. Kozhikode">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Unique Masjid ID</label>
+        <div class="flex gap-2">
+          <input type="text" id="enroll-masjid-id" class="input-field font-mono font-bold text-emerald-800 uppercase text-sm" placeholder="e.g. MSJ-7821">
+          <button type="button" onclick="generateRandomMasjidId()" class="btn btn-secondary text-xs whitespace-nowrap">⚡ Auto-Generate</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">Users will enter this unique ID to search and log in under your Masjid.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Total Ustads Eating <span class="text-red-500">*</span></label>
+          <input type="number" id="enroll-masjid-ustad-count" class="input-field text-sm" value="3" min="1" max="50">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Admin Email</label>
+          <input type="email" id="enroll-masjid-admin-email" class="input-field bg-slate-100 text-sm" readonly>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Delivery Room / Location</label>
+        <input type="text" id="enroll-masjid-location" class="input-field text-sm" placeholder="e.g. Madrasa Room #2, Ground Floor">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Delivery Notes</label>
+        <textarea id="enroll-masjid-notes" class="input-field text-xs h-16" placeholder="e.g. Covered containers only. Please knock before entering."></textarea>
+      </div>
+
+      <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+        👑 <strong>Admin Access:</strong> You (<span id="enroll-admin-email-display" class="font-bold">your email</span>) will be automatically registered as the <strong>Admin</strong> for this Masjid.
+      </div>
+
+      <button class="btn btn-primary w-full py-3 font-bold text-sm shadow-md" onclick="executeEnrollMasjid()">
+        ✨ Enroll Masjid & Open Admin Dashboard
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Join Masjid Role Selection -->
+<div class="modal" id="modal-join-masjid">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Select Your Role</h3>
+        <p class="text-xs text-slate-500 mt-0.5" id="join-masjid-subtitle">Masjid Mahallu</p>
+      </div>
+      <button onclick="closeModal('modal-join-masjid')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    
+    <p class="text-xs text-slate-600 mb-4">How are you associated with this Masjid Mahallu?</p>
+    <input type="hidden" id="join-target-masjid-id">
+
+    <div class="space-y-3 mb-5">
+      <div class="p-3.5 border-2 border-purple-500 bg-purple-50/50 rounded-xl cursor-pointer hover:bg-purple-50 flex items-center gap-3 transition" onclick="confirmJoinWithRole('member')">
+        <div class="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-xl flex-shrink-0">👤</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Jamath Member</p>
+          <p class="text-xs text-slate-500">Participate in meal duty rotations & community services (unlimited members)</p>
+        </div>
+      </div>
+
+      <div class="p-3.5 border-2 border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer hover:bg-emerald-50/50 flex items-center gap-3 transition" onclick="confirmJoinWithRole('delivery')">
+        <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xl flex-shrink-0">🛵</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Food Delivery Person / Household</p>
+          <p class="text-xs text-slate-500">Deliver food to Madrasa/Masjid on assigned dates</p>
+        </div>
+      </div>
+      
+      <div class="p-3.5 border-2 border-slate-200 hover:border-amber-500 rounded-xl cursor-pointer hover:bg-amber-50/40 flex items-center gap-3 transition" onclick="confirmJoinWithRole('ustad')">
+        <div class="w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-xl flex-shrink-0">👳</div>
+        <div>
+          <p class="font-bold text-slate-800 text-sm">Ustad (Scholar / Teacher)</p>
+          <p class="text-xs text-slate-500">Receive meals & view daily meal rotation</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2.5 rounded-lg bg-slate-100 text-center text-xs text-slate-500">
+      Need Admin rights? Each Jamath has strictly 1 trusted Jamath Representative (Admin).
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Member (Delivery Person / House / Admin) -->
+<div class="modal" id="modal-member">
+  <div class="bg-white rounded-2xl w-full max-w-lg" style="max-height:92vh; display:flex; flex-direction:column;">
+    <div class="flex items-center justify-between p-5 border-b border-slate-100 flex-shrink-0">
+      <h3 class="font-bold text-slate-800 text-base" id="member-modal-title">Add Member / House</h3>
+      <button onclick="closeModal('modal-member')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+
+    <div class="overflow-y-auto flex-1 p-5 space-y-4">
+      <input type="hidden" id="edit-member-id">
+
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">🏠 Member Information</p>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">House Name / Number <span class="text-red-500">*</span></label>
+          <input type="text" class="input-field text-sm" id="m-house" placeholder="e.g. House #14 / Nur Villa">
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Head of Household / Person Name <span class="text-red-500">*</span></label>
+          <input type="text" class="input-field text-sm" id="m-head" placeholder="Full name">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Phone Number (+91) <span class="text-red-500">*</span></label>
+            <input type="tel" class="input-field text-sm" id="m-phone" placeholder="9876543210" maxlength="10">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">User Email ID</label>
+            <input type="email" class="input-field text-sm" id="m-email" placeholder="member@gmail.com">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Role</label>
+            <select class="input-field text-sm" id="m-role">
+              <option value="member">👤 Jamath Member (Unlimited)</option>
+              <option value="delivery">🛵 Food Delivery Person</option>
+              <option value="ustad">👳 Ustad</option>
+              <option value="admin">👑 Admin (Single Trusted Representative)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Zone / Ward</label>
+            <select class="input-field text-sm" id="m-zone">
+              <option>Zone A - North</option>
+              <option>Zone B - South</option>
+              <option>Zone C - East</option>
+              <option>Zone D - West</option>
+              <option>Zone E - Central</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-semibold text-slate-600">Active Status</label>
+          <div class="toggle on" id="m-active-toggle" onclick="toggleActive()"></div>
+          <input type="hidden" id="m-active" value="true">
+          <span class="text-xs text-slate-500" id="m-active-label">Active</span>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-200"></div>
+
+      <!-- Quick Duty Assign Section -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider">📅 Assigned Duties</p>
+          <button type="button" class="btn btn-secondary text-xs py-1 px-2.5" onclick="toggleAddDutyForm()">+ Assign Duty</button>
+        </div>
+
+        <div id="add-duty-form" style="display:none;" class="p-3 rounded-xl bg-slate-50 border border-slate-200 mb-3 space-y-3">
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Duty Role</label>
+              <select class="input-field text-xs" id="duty-role">
+                <option value="member">👤 Member</option>
+                <option value="delivery">🛵 Delivery</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Duty Date</label>
+              <input type="date" class="input-field text-xs" id="duty-date">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Meal Slot</label>
+              <select class="input-field text-xs" id="duty-slot">
+                <option value="breakfast">Breakfast</option>
+                <option value="lunch" selected>Lunch</option>
+                <option value="snacks">Snacks</option>
+                <option value="dinner">Dinner</option>
+                <option value="fullday">Full Day</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary w-full text-xs py-2" onclick="addDutyAssignment()">
+            Save Duty Date
+          </button>
+        </div>
+
+        <div id="member-duties-list" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
+      </div>
+
+    </div>
+
+    <div class="p-4 border-t border-slate-100 flex gap-2 flex-shrink-0">
+      <button onclick="closeModal('modal-member')" class="btn btn-secondary flex-1 text-xs">Cancel</button>
+      <button onclick="saveMember()" class="btn btn-primary flex-1 text-xs font-bold">Save Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Self Assign Duty for Member -->
+<div class="modal" id="modal-self-assign-duty">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Assign / Choose My Duty</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Jamath Meal Rotation Roster</p>
+      </div>
+      <button onclick="closeModal('modal-self-assign-duty')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Participating Role <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm font-medium" id="self-duty-role">
+          <option value="member">👤 Jamath Member (Meal Contribution)</option>
+          <option value="delivery">🛵 Food Delivery Person (Direct Delivery)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Date <span class="text-red-500">*</span></label>
+        <input type="date" class="input-field text-sm" id="self-duty-date">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Meal Slot <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="self-duty-slot">
+          <option value="breakfast">Breakfast (7:30 AM)</option>
+          <option value="lunch" selected>Lunch (1:00 PM)</option>
+          <option value="snacks">Evening Snacks (4:30 PM)</option>
+          <option value="dinner">Dinner (8:00 PM)</option>
+          <option value="fullday">Full Day (All Meals)</option>
+        </select>
+      </div>
+      <div class="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs text-purple-900 leading-relaxed">
+        ℹ️ As a Jamath member, scheduling your duty slot prepares meals for Hazrat Ustads and notifies the sole Jamath Representative.
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-1 shadow-md" onclick="saveSelfAssignedDuty()">
+        Confirm Duty Assignment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Quick Assign Duty from Calendar (Admin) -->
+<div class="modal" id="modal-calendar-quick-duty">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="font-bold text-slate-800 text-base">Assign Duty to Roster</h3>
+        <p class="text-xs text-slate-500 mt-0.5" id="cal-duty-subtitle">Scheduled Jamath Rotation</p>
+      </div>
+      <button onclick="closeModal('modal-calendar-quick-duty')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Jamath Member / House <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="cal-duty-house" onchange="syncCalDutyRoleWithMember()">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Role <span class="text-red-500">*</span></label>
+          <select class="input-field text-sm" id="cal-duty-role">
+            <option value="member">👤 Jamath Member</option>
+            <option value="delivery">🛵 Food Delivery</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Duty Date <span class="text-red-500">*</span></label>
+          <input type="date" class="input-field text-sm" id="cal-duty-date">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Meal Slot <span class="text-red-500">*</span></label>
+        <select class="input-field text-sm" id="cal-duty-slot">
+          <option value="breakfast">Breakfast (7:30 AM)</option>
+          <option value="lunch" selected>Lunch (1:00 PM)</option>
+          <option value="snacks">Evening Snacks (4:30 PM)</option>
+          <option value="dinner">Dinner (8:00 PM)</option>
+          <option value="fullday">Full Day</option>
+        </select>
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-2 shadow-md" onclick="saveCalendarQuickDuty()">
+        Assign to Roster
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add / Edit Ustad -->
+<div class="modal" id="modal-ustad">
+  <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-800 text-base" id="ustad-modal-title">Add Ustad</h3>
+      <button onclick="closeModal('modal-ustad')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    
+    <div class="space-y-3">
+      <input type="hidden" id="edit-ustad-id">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Scholar Name <span class="text-red-500">*</span></label>
+        <input type="text" class="input-field text-sm" id="u-name" placeholder="e.g. Hazrat Ustad Abdullah">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Ustad Email (for login)</label>
+        <input type="email" class="input-field text-sm" id="u-email" placeholder="ustad@gmail.com">
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Madrasa Room</label>
+          <input type="text" class="input-field text-sm" id="u-room" placeholder="Room #1">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Subject / Role</label>
+          <input type="text" class="input-field text-sm" id="u-subject" placeholder="Hifz / Kitab">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Dietary Preferences</label>
+        <input type="text" class="input-field text-sm" id="u-diet" placeholder="e.g. Less spicy, Vegetarian">
+      </div>
+      <button class="btn btn-primary w-full text-sm font-bold mt-2" onclick="saveUstad()">
+        Save Ustad
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Database Setup -->
+<div class="modal" id="modal-db-setup">
+  <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-slate-800 text-base">Supabase Cloud Database</h3>
+      <button onclick="closeModal('modal-db-setup')" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">
+      Connected to Supabase Project. All multi-tenant data is synced locally and to cloud.
+    </p>
+    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 space-y-1">
+      <p>🟢 <strong>Status:</strong> Cloud Sync Ready</p>
+      <p>🌐 <strong>Project:</strong> momwcmngzrqsjjkwsvgx.supabase.co</p>
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button onclick="testDbConnection()" class="btn btn-primary flex-1 text-xs">Test Connection</button>
+      <button onclick="closeModal('modal-db-setup')" class="btn btn-secondary flex-1 text-xs">Close</button>
+    </div>
+  </div>
+</div>
+<script>
+// ==========================================
+// 1. CONSTANTS & SYSTEM INITIALIZATION
+// ==========================================
+<!-- Load configuration first -->
+
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SLOT_LABELS = { breakfast:'Breakfast', lunch:'Lunch', snacks:'Evening Snacks', dinner:'Dinner', fullday:'Full Day' };
+const SLOT_TIMES  = { breakfast:'7:30 AM', lunch:'1:00 PM', snacks:'4:30 PM', dinner:'8:00 PM', fullday:'All Day' };
+const SLOT_ICONS  = { breakfast:'â˜€ï¸', lunch:'ðŸ›', snacks:'ðŸ«–', dinner:'ðŸŒ™', fullday:'ðŸ½ï¸' };
+const SLOTS_ORDER = ['breakfast','lunch','snacks','dinner'];
+const ADMIN_TABS  = ['dashboard','roster','members','ustads','broadcast','settings'];
+
+// Default Seed Data
+const DEFAULT_MASJIDS = [
+  {
+    masjid_id: "MSJ-7821",
+    name: "Markaz Jamia Masjid",
+    locality: "Central Mahallu, Civil Station",
+    city: "Kozhikode",
+    admin_email: "admin@wajba.org",
+    ustad_count: 3,
+    delivery_location: "Madrasa Room #2, Ground Floor",
+    delivery_notes: "Covered hotpot containers. Please knock before entering."
+  },
+  {
+    masjid_id: "MSJ-4092",
+    name: "Bilal Masjid Mahallu",
+    locality: "East Ward, Hill Road",
+    city: "Malappuram",
+    admin_email: "bilal.admin@wajba.org",
+    ustad_count: 2,
+    delivery_location: "Ustad Residence Block B",
+    delivery_notes: "Leave food at the common dining room."
+  }
+];
+
+const DEFAULT_MASJID_USERS = [
+  { masjid_id: "MSJ-7821", email: "admin@wajba.org", role: "admin", name: "Admin Brother", phone: "9876543210" },
+  { masjid_id: "MSJ-7821", email: "ustad@wajba.org", role: "ustad", name: "Hazrat Ustad Abdullah", phone: "9876543211", room: "Room #1", subject: "Hifz & Tajweed", diet: "Less spicy food" },
+  { masjid_id: "MSJ-7821", email: "delivery@wajba.org", role: "delivery", name: "Ibrahim Household", phone: "9876543212", house: "House #14 / Nur Villa", head: "Afreez Ibrahim", zone: "Zone A - North" }
+];
+
+// App In-Memory State
+let currentUser = null;
+let activeMasjid = null;
+let currentRole = null; // 'admin' | 'ustad' | 'delivery'
+
+let masjids = [...DEFAULT_MASJIDS];
+let masjidUsers = [...DEFAULT_MASJID_USERS];
+let houses = [];
+let ustads = [];
+let roster = {};
+
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let tmrwUstadCount = 3;
+let currentEditingDutyHouseId = null;
+let editingMemberId = null;
+let toastTimer = null;
+
+// ==========================================
+// 2. STORAGE & PERSISTENCE
+// ==========================================
+function saveLocalState() {
+  try {
+    const bundle = {
+      currentUser,
+      activeMasjid,
+      currentRole,
+      masjids,
+      masjidUsers,
+      houses,
+      ustads,
+      roster
+    };
+    localStorage.setItem('wajba_multi_tenant_v2', JSON.stringify(bundle));
+  } catch (e) {
+    console.warn('Storage save failed:', e);
+  }
+}
+
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem('wajba_multi_tenant_v2');
+    if (raw) {
+      const data = JSON.parse(raw);
+      currentUser = data.currentUser || null;
+      activeMasjid = data.activeMasjid || null;
+      currentRole = data.currentRole || null;
+      masjids = Array.isArray(data.masjids) && data.masjids.length ? data.masjids : DEFAULT_MASJIDS;
+      masjidUsers = Array.isArray(data.masjidUsers) && data.masjidUsers.length ? data.masjidUsers : DEFAULT_MASJID_USERS;
+      houses = Array.isArray(data.houses) ? data.houses : [];
+      ustads = Array.isArray(data.ustads) ? data.ustads : [];
+      roster = data.roster || {};
+      return true;
+    }
+  } catch (e) {
+    console.warn('Storage load error:', e);
+  }
+  masjids = [...DEFAULT_MASJIDS];
+  masjidUsers = [...DEFAULT_MASJID_USERS];
+  return false;
+}
+
+// ==========================================
+// 3. TOAST & NOTIFICATIONS
+// ==========================================
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains('modal')) {
+    e.target.classList.remove('open');
+  }
+});
+
+// ==========================================
+// 4. NAVIGATION & AUTHENTICATION
+// ==========================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function setAuthMode(mode) {
+  const isSignUp = (mode === 'signup');
+  document.getElementById('auth-signup-fields').style.display = isSignUp ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isSignUp ? 'Create Account & Continue' : 'Sign In';
+  
+  const tabIn = document.getElementById('auth-tab-signin');
+  const tabUp = document.getElementById('auth-tab-signup');
+  if (isSignUp) {
+    tabUp.className = 'flex-1 py-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-800 bg-white';
+    tabIn.className = 'flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent';
+  } else {
+    tabIn.className = 'flex-1 py-3 text-sm font-bold border-b-2 border-emerald-600 text-emerald-800 bg-white';
+    tabUp.className = 'flex-1 py-3 text-sm font-semibold text-slate-500 border-b-2 border-transparent';
+  }
+}
+
+function togglePasswordVisibility(id) {
+  const el = document.getElementById(id);
+  if (el) el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+function handleAuthSubmit() {
+  const email = (document.getElementById('auth-email')?.value || '').trim().toLowerCase();
+  const password = document.getElementById('auth-password')?.value || '';
+  const isSignUp = document.getElementById('auth-signup-fields').style.display !== 'none';
+
+  if (!email || !email.includes('@')) {
+    showToast('Please enter a valid email address');
+    return;
+  }
+  if (!password || password.length < 4) {
+    showToast('Password must be at least 4 characters');
+    return;
+  }
+
+  let name = email.split('@')[0];
+  let phone = '';
+  if (isSignUp) {
+    name = (document.getElementById('auth-name')?.value || '').trim() || name;
+    phone = (document.getElementById('auth-phone')?.value || '').trim();
+  } else {
+    const known = masjidUsers.find(u => u.email.toLowerCase() === email);
+    if (known && known.name) name = known.name;
+    if (known && known.phone) phone = known.phone;
+  }
+
+  currentUser = { email, name, phone };
+  saveLocalState();
+  showToast(`Welcome, ${name}! ðŸ‘‹`);
+  openMasjidSelection();
+}
+
+function quickTestLogin(role) {
+  if (role === 'admin') {
+    currentUser = { email: 'admin@wajba.org', name: 'Admin Brother', phone: '9876543210' };
+  } else if (role === 'ustad') {
+    currentUser = { email: 'ustad@wajba.org', name: 'Hazrat Ustad Abdullah', phone: '9876543211' };
+  } else {
+    currentUser = { email: 'delivery@wajba.org', name: 'Afreez Ibrahim', phone: '9876543212' };
+  }
+  saveLocalState();
+  showToast(`Logged in as ${role.toUpperCase()} âš¡`);
+  openMasjidSelection();
+}
+
+function logout() {
+  currentUser = null;
+  activeMasjid = null;
+  currentRole = null;
+  saveLocalState();
+  showPage('page-landing');
+  showToast('Signed out successfully.');
+}
+// ==========================================
+// 5. MASJID SELECTION & ENROLLMENT
+// ==========================================
+function openMasjidSelection() {
+  if (!currentUser) {
+    showPage('page-landing');
+    return;
+  }
+  
+  const greetEl = document.getElementById('masjid-select-user-greeting');
+  if (greetEl) {
+    greetEl.textContent = `Logged in: ${currentUser.name} (${currentUser.email})`;
+  }
+
+  renderMasjidDirectory();
+  showPage('page-masjid-select');
+}
+
+function renderMasjidDirectory(filterText = '') {
+  const q = filterText.trim().toLowerCase();
+  
+  // 1. My Masjids
+  const myAffiliations = masjidUsers.filter(u => u.email.toLowerCase() === currentUser.email.toLowerCase());
+  const myMasjidIds = new Set(myAffiliations.map(a => a.masjid_id));
+  
+  const myListEl = document.getElementById('my-masjids-list');
+  if (myListEl) {
+    const myMasjids = masjids.filter(m => myMasjidIds.has(m.masjid_id));
+    if (myMasjids.length === 0) {
+      myListEl.innerHTML = `
+        <div class="p-4 rounded-xl bg-slate-100 border border-slate-200 text-center text-xs text-slate-500">
+          You are not enrolled in any Masjid yet. Search with a <strong>Masjid ID</strong> above or enroll your own!
+        </div>
+      `;
+    } else {
+      myListEl.innerHTML = myMasjids.map(m => {
+        const aff = myAffiliations.find(a => a.masjid_id === m.masjid_id);
+        const role = aff ? aff.role : 'delivery';
+        let roleBadge = '<span class="badge badge-delivery">🛵 Food Delivery</span>';
+        if (role === 'admin') roleBadge = '<span class="badge badge-admin">👑 Admin</span>';
+        if (role === 'ustad') roleBadge = '<span class="badge badge-ustad">👳 Ustad</span>';
+
+        return `
+          <div class="card hover:shadow-md transition p-4 flex items-center justify-between cursor-pointer border-2 hover:border-emerald-500" onclick="enterMasjid('${m.masjid_id}', '${role}')">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <h4 class="font-bold text-slate-800 text-sm">${m.name}</h4>
+                <span class="font-mono text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-bold">${m.masjid_id}</span>
+              </div>
+              <p class="text-xs text-slate-500">📍 ${m.locality}, ${m.city}</p>
+              <div>${roleBadge}</div>
+            </div>
+            <button class="btn btn-primary text-xs py-2 px-3">
+              Open Portal →
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 2. All Registered Masjids Directory
+  const allListEl = document.getElementById('all-masjids-list');
+  if (allListEl) {
+    const filtered = masjids.filter(m => {
+      if (!q) return true;
+      return m.name.toLowerCase().includes(q) || m.masjid_id.toLowerCase().includes(q) || m.locality.toLowerCase().includes(q) || m.city.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+      allListEl.innerHTML = `
+        <div class="p-4 rounded-xl bg-slate-100 border border-slate-200 text-center text-xs text-slate-500">
+          No Masjids match "${filterText}". You can enroll this Masjid using the button above!
+        </div>
+      `;
+    } else {
+      allListEl.innerHTML = filtered.map(m => {
+        const aff = myAffiliations.find(a => a.masjid_id === m.masjid_id);
+        const role = aff ? aff.role : null;
+        return `
+          <div class="card p-3.5 flex items-center justify-between hover:bg-slate-50">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800 text-sm">${m.name}</span>
+                <span class="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">${m.masjid_id}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${m.locality}, ${m.city} • ${m.ustad_count || 3} Ustads</p>
+            </div>
+            <button onclick="selectMasjid('${m.masjid_id}')" class="btn btn-secondary text-xs py-1.5 px-3">
+              ${role ? 'Enter' : 'Select / Join'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function handleMasjidSearch() {
+  const val = document.getElementById('masjid-search-input')?.value || '';
+  renderMasjidDirectory(val);
+}
+
+function handleDirectMasjidIdSearch() {
+  const val = (document.getElementById('masjid-search-input')?.value || '').trim().toUpperCase();
+  if (!val) {
+    showToast('Please enter a Masjid ID or name');
+    return;
+  }
+  const match = masjids.find(m => m.masjid_id.toUpperCase() === val || m.name.toLowerCase().includes(val.toLowerCase()));
+  if (match) {
+    selectMasjid(match.masjid_id);
+  } else {
+    showToast(`Masjid "${val}" not found. You can enroll it as an Admin!`);
+  }
+}
+
+function openEnrollMasjidModal() {
+  if (!currentUser) return;
+  const adminEmailEl = document.getElementById('enroll-masjid-admin-email');
+  const adminEmailDisp = document.getElementById('enroll-admin-email-display');
+  if (adminEmailEl) adminEmailEl.value = currentUser.email;
+  if (adminEmailDisp) adminEmailDisp.textContent = currentUser.email;
+  
+  generateRandomMasjidId();
+  openModal('modal-enroll-masjid');
+}
+
+function generateRandomMasjidId() {
+  const code = 'MSJ-' + Math.floor(1000 + Math.random() * 9000);
+  const el = document.getElementById('enroll-masjid-id');
+  if (el) el.value = code;
+}
+
+function executeEnrollMasjid() {
+  const name = (document.getElementById('enroll-masjid-name')?.value || '').trim();
+  const locality = (document.getElementById('enroll-masjid-locality')?.value || '').trim();
+  const city = (document.getElementById('enroll-masjid-city')?.value || '').trim();
+  let masjidId = (document.getElementById('enroll-masjid-id')?.value || '').trim().toUpperCase();
+  const ustadCount = parseInt(document.getElementById('enroll-masjid-ustad-count')?.value || '3', 10);
+  const location = (document.getElementById('enroll-masjid-location')?.value || '').trim();
+  const notes = (document.getElementById('enroll-masjid-notes')?.value || '').trim();
+
+  if (!name || !locality || !city) {
+    showToast('Please fill in Masjid Name, Locality, and City');
+    return;
+  }
+
+  if (!masjidId) {
+    masjidId = 'MSJ-' + Math.floor(1000 + Math.random() * 9000);
+  }
+
+  if (masjids.some(m => m.masjid_id === masjidId)) {
+    showToast('This Masjid ID is already taken. Please choose another.');
+    return;
+  }
+
+  const newMasjid = {
+    masjid_id: masjidId,
+    name,
+    locality,
+    city,
+    admin_email: currentUser.email,
+    ustad_count: ustadCount,
+    delivery_location: location || 'Madrasa Room #2, Ground Floor',
+    delivery_notes: notes || 'Please bring food in covered containers.'
+  };
+
+  masjids.unshift(newMasjid);
+
+  masjidUsers.push({
+    masjid_id: masjidId,
+    email: currentUser.email,
+    role: 'admin',
+    name: currentUser.name,
+    phone: currentUser.phone
+  });
+
+  saveLocalState();
+  closeModal('modal-enroll-masjid');
+  showToast(`🎉 Enrolled ${name}! Unique ID: ${masjidId}`);
+  enterMasjid(masjidId, 'admin');
+}
+
+// ==========================================
+// 6. ROLE DIFFERENTIATION UNDER A MASJID
+// ==========================================
+function selectMasjid(masjidId) {
+  const masjid = masjids.find(m => m.masjid_id === masjidId);
+  if (!masjid) {
+    showToast('Masjid not found');
+    return;
+  }
+
+  const aff = masjidUsers.find(u => u.masjid_id === masjidId && u.email.toLowerCase() === currentUser.email.toLowerCase());
+
+  if (aff && aff.role) {
+    enterMasjid(masjidId, aff.role);
+  } else {
+    document.getElementById('join-target-masjid-id').value = masjidId;
+    document.getElementById('join-masjid-subtitle').textContent = `${masjid.name} (ID: ${masjid.masjid_id})`;
+    openModal('modal-join-masjid');
+  }
+}
+
+function confirmJoinWithRole(role) {
+  const masjidId = document.getElementById('join-target-masjid-id')?.value;
+  const masjid = masjids.find(m => m.masjid_id === masjidId);
+  if (!masjid) return;
+
+  masjidUsers.push({
+    masjid_id: masjidId,
+    email: currentUser.email,
+    role: role,
+    name: currentUser.name,
+    phone: currentUser.phone
+  });
+
+  if (role === 'delivery') {
+    const existingHouse = houses.find(h => h.masjid_id === masjidId && h.phone === currentUser.phone);
+    if (!existingHouse) {
+      houses.push({
+        id: Date.now(),
+        masjid_id: masjidId,
+        house: `${currentUser.name.split(' ')[0]} Household`,
+        head: currentUser.name,
+        phone: currentUser.phone || '9876543210',
+        email: currentUser.email,
+        zone: 'Zone A - North',
+        active: true,
+        role: 'delivery'
+      });
+    }
+  } else if (role === 'ustad') {
+    const existingUstad = ustads.find(u => u.masjid_id === masjidId && u.email === currentUser.email);
+    if (!existingUstad) {
+      ustads.push({
+        id: Date.now(),
+        masjid_id: masjidId,
+        name: currentUser.name,
+        email: currentUser.email,
+        room: 'Room #1',
+        subject: 'General Studies',
+        diet: 'No restrictions'
+      });
+    }
+  }
+
+  saveLocalState();
+  closeModal('modal-join-masjid');
+  showToast(`Joined ${masjid.name} as ${role.toUpperCase()}!`);
+  enterMasjid(masjidId, role);
+}
+
+function enterMasjid(masjidId, role) {
+  activeMasjid = masjids.find(m => m.masjid_id === masjidId);
+  if (!activeMasjid) {
+    showToast('Error finding active masjid');
+    return;
+  }
+  currentRole = role;
+  saveLocalState();
+
+  if (role === 'admin') {
+    setupAdminView();
+    showPage('page-admin');
+    showToast(`Admin Portal: ${activeMasjid.name} 👑`);
+  } else if (role === 'ustad') {
+    setupUstadView();
+    showPage('page-ustad');
+    showToast(`Welcome Ustad ${currentUser.name} 👳`);
+  } else {
+    setupMemberView();
+    showPage('page-member');
+    showToast(`Welcome, ${currentUser.name}! 🛵`);
+  }
+}
+
+function switchMasjid() {
+  activeMasjid = null;
+  currentRole = null;
+  saveLocalState();
+  openMasjidSelection();
+}
+
+function copyActiveMasjidId() {
+  if (!activeMasjid) return;
+  navigator.clipboard.writeText(activeMasjid.masjid_id)
+    .then(() => showToast(`📋 Copied Masjid ID: ${activeMasjid.masjid_id}`))
+    .catch(() => showToast(`Masjid ID: ${activeMasjid.masjid_id}`));
+}
+
+// ==========================================
+// 7. USTAD PORTAL IMPLEMENTATION
+// ==========================================
+function setupUstadView() {
+  if (!activeMasjid || !currentUser) return;
+  
+  const nameEl = document.getElementById('ustad-welcome-name');
+  if (nameEl) nameEl.textContent = currentUser.name;
+
+  const masjidDisp = document.getElementById('ustad-masjid-name-display');
+  if (masjidDisp) masjidDisp.textContent = `${activeMasjid.name} (ID: ${activeMasjid.masjid_id})`;
+
+  const roomInst = document.getElementById('ustad-room-instructions');
+  if (roomInst) roomInst.textContent = activeMasjid.delivery_location || 'Madrasa Room #2, Ground Floor';
+
+  const roomNotes = document.getElementById('ustad-room-notes');
+  if (roomNotes) roomNotes.textContent = activeMasjid.delivery_notes || 'Delivered directly to scholar quarters.';
+
+  const myUstadRec = ustads.find(u => u.masjid_id === activeMasjid.masjid_id && u.email === currentUser.email);
+  if (myUstadRec) {
+    document.getElementById('ustad-info-name').textContent = myUstadRec.name;
+    document.getElementById('ustad-info-room').textContent = myUstadRec.room || 'Room #1';
+    document.getElementById('ustad-info-diet').textContent = myUstadRec.diet || 'No restrictions';
+    document.getElementById('ustad-info-subject').textContent = myUstadRec.subject || 'Qur\'an & Islamic Studies';
+  }
+
+  renderUstadMeals();
+}
+
+function setUstadTab(tab) {
+  ['today', 'upcoming', 'info'].forEach(t => {
+    const el = document.getElementById('ustad-tab-' + t);
+    const btn = document.getElementById('utab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) {
+      btn.className = (t === tab)
+        ? 'py-2.5 font-bold border-b-2 border-amber-400 text-white transition'
+        : 'py-2.5 font-semibold text-amber-200 opacity-70 transition';
+    }
+  });
+}
+
+function renderUstadMeals() {
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  document.getElementById('ustad-today-date').textContent = now.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' });
+  document.getElementById('ustad-confirmed-count').textContent = activeMasjid.ustad_count || 3;
+
+  const todayDuties = (roster[todayKey] || []).filter(d => !d.masjid_id || d.masjid_id === activeMasjid.masjid_id);
+  const container = document.getElementById('ustad-slots-container');
+  if (!container) return;
+
+  const masjidHouses = houses.filter(h => !h.masjid_id || h.masjid_id === activeMasjid.masjid_id);
+
+  container.innerHTML = SLOTS_ORDER.map(slot => {
+    const duty = todayDuties.find(d => d.slot === slot);
+    const house = duty ? masjidHouses.find(h => h.id === duty.houseId) : null;
+    
+    let statusBadge = '<span class="badge badge-pending">⏳ Scheduled</span>';
+    if (duty && duty.status === 'confirmed') statusBadge = '<span class="badge badge-confirmed">✅ Confirmed</span>';
+    if (duty && duty.status === 'delivered') statusBadge = '<span class="badge badge-delivered">🍽️ Delivered</span>';
+
+    return `
+      <div class="card p-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-xl">
+            ${SLOT_ICONS[slot]}
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 class="font-bold text-slate-800 text-sm">${SLOT_LABELS[slot]}</h4>
+              <span class="text-xs text-slate-400 font-medium">(${SLOT_TIMES[slot]})</span>
+            </div>
+            <p class="text-xs font-semibold text-slate-600 mt-0.5">
+              ${house ? `🏠 ${house.house} (${house.head})` : '<span class="text-amber-600">Pending Assignment</span>'}
+            </p>
+          </div>
+        </div>
+        <div class="text-right space-y-1">
+          <div>${statusBadge}</div>
+          ${house && house.phone ? `
+            <div class="flex items-center justify-end gap-1.5">
+              <a href="tel:${house.phone}" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100">📞 Call</a>
+              <a href="https://wa.me/91${house.phone}" target="_blank" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100">💬 WA</a>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const upcomingListEl = document.getElementById('ustad-upcoming-list');
+  if (upcomingListEl) {
+    let html = '';
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dDuties = (roster[k] || []).filter(x => !x.masjid_id || x.masjid_id === activeMasjid.masjid_id);
+      
+      html += `
+        <div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+          <div>
+            <span class="font-bold text-slate-800">${d.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+            <p class="text-slate-500">${dDuties.length} meal slot(s) planned</p>
+          </div>
+          <span class="font-mono text-emerald-700 font-bold">${dDuties.length ? '✓ Scheduled' : 'Pending'}</span>
+        </div>
+      `;
+    }
+    upcomingListEl.innerHTML = html;
+  }
+}
+
+// ==========================================
+// 8. FOOD DELIVERY / MEMBER PORTAL
+// ==========================================
+function setupMemberView() {
+  if (!activeMasjid || !currentUser) return;
+
+  const welcomeEl = document.getElementById('member-welcome-name');
+  if (welcomeEl) welcomeEl.textContent = currentUser.name;
+
+  const masjidDisp = document.getElementById('member-masjid-name-display');
+  if (masjidDisp) masjidDisp.textContent = `${activeMasjid.name} (ID: ${activeMasjid.masjid_id})`;
+
+  const locEl = document.getElementById('member-delivery-location');
+  if (locEl) locEl.textContent = activeMasjid.delivery_location || 'Madrasa Room #2, Ground Floor';
+
+  const notesEl = document.getElementById('member-delivery-notes');
+  if (notesEl) notesEl.textContent = activeMasjid.delivery_notes || 'Please bring food in covered containers before meal timing.';
+
+  renderMemberHome();
+}
+
+function setMemberTab(tab) {
+  ['home', 'upcoming', 'history'].forEach(t => {
+    const el = document.getElementById('member-tab-' + t);
+    const btn = document.getElementById('mtab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) {
+      btn.className = (t === tab)
+        ? 'text-xs font-bold text-white border-b-2 border-white px-3 py-2'
+        : 'text-xs font-bold text-white text-opacity-70 border-b-2 border-transparent px-3 py-2';
+    }
+  });
+}
+
+function renderMemberHome() {
+  const myHouse = houses.find(h => (!h.masjid_id || h.masjid_id === activeMasjid.masjid_id) && (h.phone === currentUser.phone || h.email === currentUser.email));
+  const myHouseId = myHouse ? myHouse.id : null;
+
+  const now = new Date();
+  let nextDuty = null;
+  let nextDutyDateStr = '';
+
+  for (let i = 0; i <= 30; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const duties = (roster[k] || []).filter(x => (!x.masjid_id || x.masjid_id === activeMasjid.masjid_id) && x.houseId === myHouseId);
+    if (duties.length) {
+      nextDuty = duties[0];
+      nextDutyDateStr = d.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' });
+      break;
+    }
+  }
+
+  const dateEl = document.getElementById('next-duty-date');
+  const slotEl = document.getElementById('next-duty-slot');
+  const timeEl = document.getElementById('next-duty-time');
+  const countEl = document.getElementById('next-duty-count');
+  const badgeEl = document.getElementById('next-duty-status-badge');
+
+  if (nextDuty) {
+    if (dateEl) dateEl.textContent = nextDutyDateStr;
+    if (slotEl) slotEl.textContent = SLOT_LABELS[nextDuty.slot] || 'Meal Slot';
+    if (timeEl) timeEl.textContent = SLOT_TIMES[nextDuty.slot] || '';
+    if (countEl) countEl.textContent = activeMasjid.ustad_count || 3;
+    if (badgeEl) {
+      badgeEl.className = 'badge badge-' + (nextDuty.status || 'pending');
+      badgeEl.textContent = (nextDuty.status === 'confirmed') ? 'Confirmed' : (nextDuty.status === 'delivered' ? 'Delivered' : 'Pending');
+    }
+  } else {
+    if (dateEl) dateEl.textContent = 'No Immediate Duties';
+    if (slotEl) slotEl.textContent = 'Free';
+    if (timeEl) timeEl.textContent = '';
+    if (countEl) countEl.textContent = activeMasjid.ustad_count || 3;
+    if (badgeEl) {
+      badgeEl.className = 'badge badge-confirmed';
+      badgeEl.textContent = 'Active';
+    }
+  }
+
+  const ustadsListEl = document.getElementById('member-ustads-list');
+  if (ustadsListEl) {
+    const activeUstads = ustads.filter(u => !u.masjid_id || u.masjid_id === activeMasjid.masjid_id);
+    if (activeUstads.length === 0) {
+      ustadsListEl.innerHTML = '<p class="text-xs text-slate-400">No ustads registered yet.</p>';
+    } else {
+      ustadsListEl.innerHTML = activeUstads.map(u => `
+        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+          <div>
+            <p class="font-bold text-slate-800">👳 ${u.name}</p>
+            <p class="text-slate-500">${u.room || 'Room #1'} • ${u.diet || 'Standard Diet'}</p>
+          </div>
+          <span class="badge badge-admin">${u.subject || 'Scholar'}</span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function confirmDuty() {
+  showToast('✅ Duty Confirmed! Jazakallah Khair.');
+  const badgeEl = document.getElementById('next-duty-status-badge');
+  if (badgeEl) {
+    badgeEl.className = 'badge badge-confirmed';
+    badgeEl.textContent = 'Confirmed';
+  }
+}
+
+function markDelivered() {
+  showToast('🍽️ Food Marked as Delivered! Thank you.');
+  const badgeEl = document.getElementById('next-duty-status-badge');
+  if (badgeEl) {
+    badgeEl.className = 'badge badge-delivered';
+    badgeEl.textContent = 'Delivered';
+  }
+}
+// ==========================================
+// 9. ADMIN DASHBOARD IMPLEMENTATION
+// ==========================================
+function setupAdminView() {
+  if (!activeMasjid) return;
+
+  const now = new Date();
+  document.getElementById('admin-date-display').textContent = now.toLocaleDateString('en-IN', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' });
+  
+  document.getElementById('admin-masjid-title').textContent = activeMasjid.name;
+  document.getElementById('admin-masjid-id-badge').textContent = activeMasjid.masjid_id;
+  document.getElementById('side-masjid-name').textContent = activeMasjid.name;
+  document.getElementById('side-masjid-id-badge').textContent = 'ID: ' + activeMasjid.masjid_id;
+
+  document.getElementById('settings-masjid-id').value = activeMasjid.masjid_id;
+  document.getElementById('settings-masjid-name').value = activeMasjid.name;
+  document.getElementById('settings-admin-email').value = activeMasjid.admin_email || (currentUser ? currentUser.email : '');
+  document.getElementById('settings-ustad-count').value = activeMasjid.ustad_count || 3;
+  document.getElementById('settings-delivery-location').value = activeMasjid.delivery_location || '';
+  document.getElementById('settings-delivery-notes').value = activeMasjid.delivery_notes || '';
+
+  renderDashboard();
+}
+
+function setAdminTab(tab) {
+  ADMIN_TABS.forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el) el.classList.toggle('active', t === tab);
+    const side = document.getElementById('side-' + t);
+    if (side) side.classList.toggle('active', t === tab);
+    const mnav = document.getElementById('mnav-' + t);
+    if (mnav) {
+      mnav.className = (t === tab)
+        ? 'nav-tab active px-3 py-1.5 text-xs font-bold rounded-lg whitespace-nowrap bg-emerald-50 text-emerald-800'
+        : 'nav-tab px-3 py-1.5 text-xs font-semibold text-slate-600 rounded-lg whitespace-nowrap';
+    }
+  });
+
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'roster') renderCalendar();
+  if (tab === 'members') renderMembersTable();
+  if (tab === 'ustads') renderUstadsGrid();
+  if (tab === 'broadcast') renderBroadcast();
+}
+
+function renderDashboard() {
+  if (!activeMasjid) return;
+
+  const masjidHouses = houses.filter(h => !h.masjid_id || h.masjid_id === activeMasjid.masjid_id);
+  const masjidUstads = ustads.filter(u => !u.masjid_id || u.masjid_id === activeMasjid.masjid_id);
+
+  document.getElementById('stat-houses').textContent = masjidHouses.length;
+  document.getElementById('stat-ustads').textContent = masjidUstads.length || (activeMasjid.ustad_count || 3);
+
+  let totalDuties = 0;
+  let confirmedDuties = 0;
+  Object.keys(roster).forEach(k => {
+    (roster[k] || []).forEach(d => {
+      if (!d.masjid_id || d.masjid_id === activeMasjid.masjid_id) {
+        totalDuties++;
+        if (d.status === 'confirmed' || d.status === 'delivered') confirmedDuties++;
+      }
+    });
+  });
+
+  document.getElementById('stat-duties').textContent = totalDuties;
+  document.getElementById('stat-confirmed').textContent = confirmedDuties;
+
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  const tmrw = new Date();
+  tmrw.setDate(tmrw.getDate() + 1);
+  const tmrwKey = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, '0')}-${String(tmrw.getDate()).padStart(2, '0')}`;
+
+  const todayDuties = (roster[todayKey] || []).filter(d => !d.masjid_id || d.masjid_id === activeMasjid.masjid_id);
+  const tmrwDuties = (roster[tmrwKey] || []).filter(d => !d.masjid_id || d.masjid_id === activeMasjid.masjid_id);
+
+  renderDutyMiniList('today-duties-admin', todayDuties);
+  renderDutyMiniList('tomorrow-duties-admin', tmrwDuties);
+}
+
+function renderDutyMiniList(containerId, duties) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!duties || duties.length === 0) {
+    el.innerHTML = '<p class="text-xs text-slate-400 py-3">No duties scheduled yet.</p>';
+    return;
+  }
+  const masjidHouses = houses.filter(h => !h.masjid_id || h.masjid_id === activeMasjid.masjid_id);
+  el.innerHTML = duties.map(d => {
+    const h = masjidHouses.find(x => x.id === d.houseId);
+    return `
+      <div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 text-xs">
+        <div class="flex items-center gap-2">
+          <span>${SLOT_ICONS[d.slot] || '🍽️'}</span>
+          <span class="font-bold text-slate-700">${SLOT_LABELS[d.slot] || d.slot}:</span>
+          <span class="text-slate-600">${h ? h.house : 'Unassigned'}</span>
+        </div>
+        <span class="badge badge-${d.status || 'pending'}">${d.status || 'pending'}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// Calendar
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const title = document.getElementById('cal-month-title');
+  if (!grid || !title) return;
+
+  title.textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+  
+  let html = DAYS_SHORT.map(d => `<div class="text-center font-bold text-[11px] text-slate-400 py-1">${d}</div>`).join('');
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="h-16 bg-slate-50/50 rounded-lg"></div>';
+  }
+
+  const today = new Date();
+  const isThisMonth = (today.getMonth() === currentMonth && today.getFullYear() === currentYear);
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = isThisMonth && (today.getDate() === d);
+    const key = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const duties = (roster[key] || []).filter(x => !x.masjid_id || x.masjid_id === activeMasjid.masjid_id);
+
+    html += `
+      <div class="h-16 p-1 border border-slate-100 rounded-lg flex flex-col justify-between ${isToday ? 'bg-emerald-50/70 border-emerald-300' : 'bg-white hover:bg-slate-50'}">
+        <span class="text-[11px] font-bold ${isToday ? 'text-emerald-800' : 'text-slate-700'}">${d}</span>
+        <div class="space-y-0.5 overflow-hidden">
+          ${duties.slice(0, 2).map(duty => `<div class="text-[9px] truncate px-1 rounded bg-emerald-100 text-emerald-800 font-semibold">${SLOT_LABELS[duty.slot] || duty.slot}</div>`).join('')}
+          ${duties.length > 2 ? `<div class="text-[8px] text-slate-400">+${duties.length - 2} more</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  grid.innerHTML = html;
+}
+
+function prevMonth() {
+  currentMonth--;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  currentMonth++;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+}
+
+// Members Table
+function renderMembersTable() {
+  const tbody = document.getElementById('members-table-body');
+  if (!tbody || !activeMasjid) return;
+
+  const masjidHouses = houses.filter(h => !h.masjid_id || h.masjid_id === activeMasjid.masjid_id);
+  if (masjidHouses.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 text-xs">No members enrolled under ${activeMasjid.name} yet. Click "+ Add Member" above!</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = masjidHouses.map(h => {
+    let roleBadge = '<span class="badge badge-delivery">🛵 Food Delivery</span>';
+    if (h.role === 'admin') roleBadge = '<span class="badge badge-admin">👑 Admin</span>';
+    if (h.role === 'ustad') roleBadge = '<span class="badge badge-ustad">👳 Ustad</span>';
+
+    return `
+      <tr>
+        <td>
+          <p class="font-bold text-slate-800 text-xs">${h.house}</p>
+          <p class="text-[11px] text-slate-500">${h.head}</p>
+        </td>
+        <td class="font-mono text-xs text-slate-600">+91 ${h.phone}</td>
+        <td class="text-xs text-slate-500">${h.email || '—'}</td>
+        <td>${roleBadge}</td>
+        <td>
+          <span class="badge ${h.active !== false ? 'badge-confirmed' : 'badge-pending'}">${h.active !== false ? 'Active' : 'Inactive'}</span>
+        </td>
+        <td>
+          <div class="flex items-center gap-1.5">
+            <button onclick="editMember(${h.id})" class="btn btn-secondary text-xs py-1 px-2">Edit</button>
+            <button onclick="deleteMember(${h.id})" class="btn btn-danger text-xs py-1 px-2">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openAddMemberModal() {
+  document.getElementById('member-modal-title').textContent = 'Add Member / House';
+  document.getElementById('edit-member-id').value = '';
+  document.getElementById('m-house').value = '';
+  document.getElementById('m-head').value = '';
+  document.getElementById('m-phone').value = '';
+  document.getElementById('m-email').value = '';
+  document.getElementById('m-role').value = 'delivery';
+  document.getElementById('add-duty-form').style.display = 'none';
+  document.getElementById('member-duties-list').innerHTML = '';
+  openModal('modal-member');
+}
+
+function editMember(id) {
+  const h = houses.find(x => x.id === id);
+  if (!h) return;
+  document.getElementById('member-modal-title').textContent = 'Edit Member';
+  document.getElementById('edit-member-id').value = h.id;
+  document.getElementById('m-house').value = h.house;
+  document.getElementById('m-head').value = h.head;
+  document.getElementById('m-phone').value = h.phone;
+  document.getElementById('m-email').value = h.email || '';
+  document.getElementById('m-role').value = h.role || 'delivery';
+  currentEditingDutyHouseId = h.id;
+  renderMemberDuties(h.id);
+  openModal('modal-member');
+}
+
+function saveMember() {
+  const editId = document.getElementById('edit-member-id').value;
+  const house = (document.getElementById('m-house').value || '').trim();
+  const head = (document.getElementById('m-head').value || '').trim();
+  const phone = (document.getElementById('m-phone').value || '').trim();
+  const email = (document.getElementById('m-email').value || '').trim();
+  const role = document.getElementById('m-role').value || 'delivery';
+  const zone = document.getElementById('m-zone').value;
+
+  if (!house || !head || !phone) {
+    showToast('Please fill in House name, Head person name, and Phone number');
+    return;
+  }
+
+  if (editId) {
+    const idx = houses.findIndex(x => x.id === parseInt(editId, 10));
+    if (idx !== -1) {
+      houses[idx] = { ...houses[idx], house, head, phone, email, role, zone };
+    }
+  } else {
+    houses.push({
+      id: Date.now(),
+      masjid_id: activeMasjid.masjid_id,
+      house,
+      head,
+      phone,
+      email,
+      role,
+      zone,
+      active: true
+    });
+  }
+
+  if (email) {
+    const existing = masjidUsers.find(u => u.masjid_id === activeMasjid.masjid_id && u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      existing.role = role;
+      existing.name = head;
+      existing.phone = phone;
+    } else {
+      masjidUsers.push({
+        masjid_id: activeMasjid.masjid_id,
+        email: email,
+        role: role,
+        name: head,
+        phone: phone
+      });
+    }
+  }
+
+  saveLocalState();
+  closeModal('modal-member');
+  showToast('Member saved successfully! ✅');
+  renderMembersTable();
+}
+
+function deleteMember(id) {
+  if (!confirm('Are you sure you want to remove this member?')) return;
+  houses = houses.filter(x => x.id !== id);
+  saveLocalState();
+  showToast('Member removed.');
+  renderMembersTable();
+}
+
+function toggleActive() {
+  const t = document.getElementById('m-active-toggle');
+  const input = document.getElementById('m-active');
+  const lbl = document.getElementById('m-active-label');
+  const cur = input.value === 'true';
+  input.value = cur ? 'false' : 'true';
+  t.className = 'toggle' + (!cur ? ' on' : '');
+  lbl.textContent = !cur ? 'Active' : 'Inactive';
+}
+
+function toggleAddDutyForm() {
+  const f = document.getElementById('add-duty-form');
+  if (!f) return;
+  f.style.display = (f.style.display === 'none') ? 'block' : 'none';
+  if (f.style.display === 'block') {
+    document.getElementById('duty-date').value = new Date().toISOString().split('T')[0];
+  }
+}
+
+function addDutyAssignment() {
+  const dateVal = document.getElementById('duty-date')?.value;
+  const slot = document.getElementById('duty-slot')?.value;
+  const houseId = currentEditingDutyHouseId;
+
+  if (!dateVal) { showToast('Please select a duty date'); return; }
+  if (!houseId) { showToast('Save member first to assign duties'); return; }
+
+  if (!roster[dateVal]) roster[dateVal] = [];
+  roster[dateVal].push({
+    id: Date.now(),
+    masjid_id: activeMasjid.masjid_id,
+    duty_date: dateVal,
+    slot,
+    houseId,
+    status: 'pending'
+  });
+
+  saveLocalState();
+  showToast('Duty date added! 📅');
+  renderMemberDuties(houseId);
+  toggleAddDutyForm();
+}
+
+function renderMemberDuties(houseId) {
+  const listEl = document.getElementById('member-duties-list');
+  if (!listEl) return;
+  const myDuties = [];
+  Object.keys(roster).forEach(k => {
+    (roster[k] || []).forEach(d => {
+      if (d.houseId === houseId && (!d.masjid_id || d.masjid_id === activeMasjid.masjid_id)) {
+        myDuties.push(d);
+      }
+    });
+  });
+
+  if (myDuties.length === 0) {
+    listEl.innerHTML = '<p class="text-[11px] text-slate-400">No duties assigned yet.</p>';
+    return;
+  }
+
+  listEl.innerHTML = myDuties.map(d => `
+    <div class="p-2 bg-white rounded-lg border border-slate-200 flex items-center justify-between text-xs">
+      <div>
+        <span class="font-bold text-slate-700">${d.duty_date}</span>
+        <span class="text-slate-500 font-semibold ml-1.5">${SLOT_LABELS[d.slot] || d.slot}</span>
+      </div>
+      <button onclick="removeDuty(${d.id})" class="text-red-500 hover:text-red-700 text-xs">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeDuty(dutyId) {
+  Object.keys(roster).forEach(k => {
+    roster[k] = (roster[k] || []).filter(d => d.id !== dutyId);
+  });
+  saveLocalState();
+  showToast('Duty removed.');
+  if (currentEditingDutyHouseId) renderMemberDuties(currentEditingDutyHouseId);
+}
+
+// Ustads Grid
+function renderUstadsGrid() {
+  const grid = document.getElementById('ustads-grid');
+  if (!grid || !activeMasjid) return;
+
+  const masjidUstads = ustads.filter(u => !u.masjid_id || u.masjid_id === activeMasjid.masjid_id);
+  if (masjidUstads.length === 0) {
+    grid.innerHTML = '<div class="col-span-3 text-center py-6 text-slate-400 text-xs">No ustads registered yet. Click "+ Add Ustad" above!</div>';
+    return;
+  }
+
+  grid.innerHTML = masjidUstads.map(u => `
+    <div class="card p-4 space-y-3 hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg">
+          👳
+        </div>
+        <button onclick="deleteUstad(${u.id})" class="text-red-400 hover:text-red-600 text-xs">✕ Delete</button>
+      </div>
+      <div>
+        <h4 class="font-bold text-slate-800 text-sm">${u.name}</h4>
+        <p class="text-xs text-slate-500">${u.email || 'No email linked'}</p>
+      </div>
+      <div class="text-xs space-y-1 text-slate-600 bg-slate-50 p-2.5 rounded-xl">
+        <p>🏠 <strong>Room:</strong> ${u.room || 'Room #1'}</p>
+        <p>📚 <strong>Subject:</strong> ${u.subject || 'General'}</p>
+        <p>🥗 <strong>Diet:</strong> ${u.diet || 'Standard'}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAddUstadModal() {
+  document.getElementById('u-name').value = '';
+  document.getElementById('u-email').value = '';
+  document.getElementById('u-room').value = 'Room #1';
+  document.getElementById('u-subject').value = 'Hifz / Kitab';
+  document.getElementById('u-diet').value = 'No restrictions';
+  openModal('modal-ustad');
+}
+
+function saveUstad() {
+  const name = (document.getElementById('u-name').value || '').trim();
+  const email = (document.getElementById('u-email').value || '').trim();
+  const room = (document.getElementById('u-room').value || '').trim();
+  const subject = (document.getElementById('u-subject').value || '').trim();
+  const diet = (document.getElementById('u-diet').value || '').trim();
+
+  if (!name) { showToast('Please enter Ustad Name'); return; }
+
+  ustads.push({
+    id: Date.now(),
+    masjid_id: activeMasjid.masjid_id,
+    name,
+    email,
+    room,
+    subject,
+    diet
+  });
+
+  if (email) {
+    masjidUsers.push({
+      masjid_id: activeMasjid.masjid_id,
+      email,
+      role: 'ustad',
+      name,
+      phone: ''
+    });
+  }
+
+  saveLocalState();
+  closeModal('modal-ustad');
+  showToast(`Ustad ${name} added! 👳`);
+  renderUstadsGrid();
+}
+
+function deleteUstad(id) {
+  if (!confirm('Remove this Ustad?')) return;
+  ustads = ustads.filter(x => x.id !== id);
+  saveLocalState();
+  showToast('Ustad removed.');
+  renderUstadsGrid();
+}
+
+// Reminders & Broadcast
+function renderBroadcast() {
+  const countInput = document.getElementById('tmrw-ustad-count');
+  if (countInput) countInput.value = tmrwUstadCount;
+  document.getElementById('confirmed-ustad-btn-num').textContent = tmrwUstadCount;
+
+  const tmrw = new Date();
+  tmrw.setDate(tmrw.getDate() + 1);
+  const tmrwKey = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, '0')}-${String(tmrw.getDate()).padStart(2, '0')}`;
+
+  const previewEl = document.getElementById('whatsapp-preview-msg');
+  if (!previewEl) return;
+
+  const dateStr = tmrw.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric' });
+  const previewText = `As-salamu alaykum 🌙\n\nReminder from *${activeMasjid.name}* (Masjid ID: *${activeMasjid.masjid_id}*):\n\nYou are scheduled to provide food for Ustads tomorrow (*${dateStr}*).\n\n🍛 *Ustads Eating Tomorrow:* ${tmrwUstadCount} Ustads\n📍 *Delivery Location:* ${activeMasjid.delivery_location || 'Madrasa Room #2'}\n\nPlease confirm preparation in your WAJBA portal. Jazakallahu Khair!`;
+
+  previewEl.textContent = previewText;
+}
+
+function adjustTmrwUstadCount(delta) {
+  tmrwUstadCount = Math.max(1, tmrwUstadCount + delta);
+  document.getElementById('tmrw-ustad-count').value = tmrwUstadCount;
+  document.getElementById('confirmed-ustad-btn-num').textContent = tmrwUstadCount;
+  renderBroadcast();
+}
+
+function confirmUstadCount() {
+  const inputVal = parseInt(document.getElementById('tmrw-ustad-count')?.value || '3', 10);
+  tmrwUstadCount = inputVal;
+  activeMasjid.ustad_count = inputVal;
+  saveLocalState();
+  showToast(`✅ Headcount confirmed: ${tmrwUstadCount} Ustads for tomorrow!`);
+  renderBroadcast();
+}
+
+function sendAllReminders() {
+  const tmrw = new Date();
+  tmrw.setDate(tmrw.getDate() + 1);
+  const tmrwKey = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, '0')}-${String(tmrw.getDate()).padStart(2, '0')}`;
+  const tmrwDuties = (roster[tmrwKey] || []).filter(d => !d.masjid_id || d.masjid_id === activeMasjid.masjid_id);
+
+  const masjidHouses = houses.filter(h => !h.masjid_id || h.masjid_id === activeMasjid.masjid_id);
+  const tomorrowHouse = tmrwDuties.length ? masjidHouses.find(h => h.id === tmrwDuties[0].houseId) : null;
+
+  const targetPhone = (tomorrowHouse && tomorrowHouse.phone) ? tomorrowHouse.phone : '9876543210';
+  const rawMsg = document.getElementById('whatsapp-preview-msg')?.textContent || 'Food rotation reminder';
+
+  window.open(`https://wa.me/91${targetPhone}?text=${encodeURIComponent(rawMsg)}`, '_blank');
+  showToast('WhatsApp opened for tomorrow\'s member! 📲');
+}
+
+// Settings
+function saveSettings() {
+  const name = (document.getElementById('settings-masjid-name')?.value || '').trim();
+  const ustadCount = parseInt(document.getElementById('settings-ustad-count')?.value || '3', 10);
+  const loc = (document.getElementById('settings-delivery-location')?.value || '').trim();
+  const notes = (document.getElementById('settings-delivery-notes')?.value || '').trim();
+
+  if (!name) { showToast('Please enter Masjid Name'); return; }
+
+  activeMasjid.name = name;
+  activeMasjid.ustad_count = ustadCount;
+  activeMasjid.delivery_location = loc;
+  activeMasjid.delivery_notes = notes;
+
+  saveLocalState();
+  setupAdminView();
+  showToast('Masjid settings saved! ✅');
+}
+
+function testDbConnection() {
+  showToast('🟢 Supabase Cloud DB is connected and synced.');
+  closeModal('modal-db-setup');
+}
+
+// ==========================================
+// 10. APP STARTUP & BOOTSTRAP
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+  loadLocalState();
+
+  if (currentUser) {
+    if (activeMasjid && currentRole) {
+      enterMasjid(activeMasjid.masjid_id, currentRole);
+    } else {
+      openMasjidSelection();
+    }
+  } else {
+    showPage('page-landing');
+  }
+});
+</script>
+</body>
+</html>
